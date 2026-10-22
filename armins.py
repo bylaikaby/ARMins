@@ -1,6 +1,6 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.7.1 (local/unreleased)
+Version: 0.7.2 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: experimental
@@ -24,7 +24,7 @@ try:
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.7.1 (local/unreleased)"
+VERSION = "0.7.2 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):
@@ -1462,7 +1462,7 @@ def show_atlas_setup_help(parent=None):
 
     help_dialog = qt.QDialog(parent or slicer.util.mainWindow())
     help_dialog.setObjectName("NMTAtlasSetupHelpDialog")
-    help_dialog.setWindowTitle("Set up NMT v2.1 symmetric atlas")
+    help_dialog.setWindowTitle(f"ARMins {VERSION} · NMT v2.1 setup")
     help_dialog.setMinimumWidth(560)
     _apply_gui_theme(help_dialog)
     layout = qt.QVBoxLayout(help_dialog)
@@ -1523,7 +1523,7 @@ def show_gui():
 
     dialog = qt.QDialog(slicer.util.mainWindow())
     dialog.setObjectName("InsulaAtlasEditorDialog")
-    dialog.setWindowTitle("ARMins · Atlas editor")
+    dialog.setWindowTitle(f"ARMins {VERSION} · Atlas editor")
     dialog.setMinimumWidth(680)
     _apply_gui_theme(dialog)
     form = qt.QFormLayout(dialog)
@@ -1532,7 +1532,7 @@ def show_gui():
     form.setVerticalSpacing(5)
 
     banner = qt.QLabel(
-        "<b>ARMins</b> &nbsp; Atlas refinement<br>"
+        f"<b>ARMins {VERSION}</b> &nbsp; Atlas refinement<br>"
         "<span style='color:#a9c0cc'>NMT v2.1 symmetric · Edit one side, review its mirror</span>",
         dialog)
     banner.setObjectName("ARMinsBanner")
@@ -1915,8 +1915,9 @@ def show_gui():
 def _build_cli_parser():
     parser = argparse.ArgumentParser(
         prog="armins.py",
-        description="Validate and prepare ARM insula level-6 inputs; open the editor in 3D Slicer.",
+        description=f"ARMins {VERSION}. Validate and prepare ARM insula level-6 inputs; open the editor in 3D Slicer.",
     )
+    parser.add_argument("--version", action="version", version=f"ARMins {VERSION}")
     commands = parser.add_subparsers(dest="command")
     check = commands.add_parser("check", help="read-only validate a 3-D ARM L6 label volume")
     check.add_argument("--template", default=str(REF_PATH) if REF_PATH else None)

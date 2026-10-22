@@ -1,6 +1,6 @@
 """Synthetic NIfTI preparation and portable CLI checks for ARMins.
 
-Version: 0.7.0 (local/unreleased)
+Version: 0.7.2 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: candidate
@@ -189,6 +189,12 @@ class PrepareLevel6Tests(unittest.TestCase):
             [sys.executable, str(REPO / "armins.py"), "--help"],
             check=True, capture_output=True, text=True)
         self.assertIn("{check,prepare,search,gui}", completed.stdout)
+        self.assertIn(armins.VERSION, completed.stdout)
+        version = subprocess.run(
+            [sys.executable, str(REPO / "armins.py"), "--version"],
+            check=True, capture_output=True, text=True, cwd=self.root)
+        self.assertEqual(version.stdout.strip(), f"ARMins {armins.VERSION}")
+
 
     def test_cli_check_dry_run_resolves_and_validates_without_writes(self):
         self._save_atlas(self._multilevel("5d"))

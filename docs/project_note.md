@@ -26,6 +26,23 @@ operation. Template images remain external references; source data are preserved
 
 ## Operations journal
 
+### 2026-10-22 | Agent Codex | Visible tool version and changelog
+
+- Request: maintain the changelog, show a version in GUI and CLI, and push.
+  Starting public commit: 5b9f0f2 (0.7.1). Current candidate tool: 0.7.2.
+- One existing VERSION value now supplies the main title/header, setup-help
+  title, CLI help/--version and generated receipts. The unchanged hierarchy
+  resolver retains its distinct module version and earlier validation hashes.
+- Verified 49 synthetic tests, including CLI help/--version from another working
+  directory, and five native Slicer 5.12.0 design/help checks. Visually reviewed
+  refreshed screenshots. AST changes are confined to GUI/help/parser functions.
+  Prior atlas and mirroring evidence remains labelled with its tested version.
+- Review (1) README screenshot: header reads 0.7.2; (2) `python armins.py --version`:
+  output matches the header and this changelog; (3) inspect earlier scientific
+  limits before accepting edited anatomy. Earlier requested colour/contrast,
+  hierarchy, hemisphere, manual and download features remain delivered.
+
+
 ### 2026-10-22 | Agent Codex | GUI colour and contrast refinement
 
 - Objective: add VisPa-like colour elements; follow-up requested darker text

@@ -2,6 +2,15 @@
 
 One consolidated history. README.md is the operator guide.
 
+## 0.7.2 - 2026-10-22 (local/unreleased)
+
+- Show the authoritative tool version in the main GUI title/header, setup-help
+  title, CLI help and `python armins.py --version`. Keep script headers and
+  receipts consistent; retain the separate unchanged hierarchy module version.
+- Refresh screenshots and operator instructions. Atlas/edit/mirror algorithms
+  are unchanged. Validation: 49 synthetic tests (including CLI help/version
+  outside the repository) and five native Slicer 5.12.0 design/help checks.
+
 ## 0.7.1 - 2026-10-22 (local/unreleased)
 
 - Added dialog-local VisPa-inspired navy/teal styling, compact section headings,

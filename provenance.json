@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
   "recorded_date": "2026-10-22",
-  "tool_version": "0.7.1 (local/unreleased)",
+  "tool_version": "0.7.2 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -32,20 +32,20 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "15905831405fd53d42c0688ffb2762cef4c191376ae1e4b8d8ad9fa1d1892d46",
-      "bytes": 23494,
+      "sha256": "a236c958c92b2e6e7f0d5f6f25de00e4475447298f8601fcfb6c4f1996da841b",
+      "bytes": 23913,
       "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "6590d3d20fe98b240dd45b84ee85fd3d8b62a1f40884411009cf67132fe95a66",
-      "bytes": 101771,
-      "inputs": "Published 0.7.0 baseline plus dialog-local GUI styling and help Close signal fix; atlas algorithms unchanged."
+      "sha256": "16a61b824e62f8805cd5c0a4cc7e03564683244c73af140a5dc04a03f12a3984",
+      "bytes": 101900,
+      "inputs": "Published 0.7.1 plus GUI/CLI version visibility; scientific algorithms unchanged."
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "9f32d7dc9fb7148b646ad1dccd471d231d1d75bd56932070e64cc1808e829a58",
-      "bytes": 3294,
+      "sha256": "4ef50d03aa3eb170e7ebc0889a799990574bf068a39434eca8cd03054e55ab72",
+      "bytes": 3801,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,15 +74,15 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "39bfe8a9f525106a31374317411b03c034f41d33c1da4619fad36bc235b6573d",
-      "bytes": 6804,
+      "sha256": "7f905a79fb328757748a3ae0ac18195c428db23927d805356c2c19ccccd9e24e",
+      "bytes": 7888,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
       "sha256": "e6f6228a3f0e95445955bfa069e1e58e89929688b84421e0cf0511bfc719f5d1",
       "bytes": 59461,
-      "inputs": "Actual styled setup-help dialog from Slicer 5.12.0 with 0.7.1; blank inputs and no private paths."
+      "inputs": "Actual Slicer 5.12.0 design capture with current 0.7.2 module; blank inputs, no private paths."
     },
     "tests/test_editor.py": {
       "purpose": "Synthetic scope/input/editor compatibility regression tests.",
@@ -98,14 +98,14 @@
     },
     "tests/test_preparation.py": {
       "purpose": "Synthetic NIfTI/CLI preparation, provenance and non-overwrite tests.",
-      "sha256": "011d2589d7df25b54a76f4e32b3949fa598a989c50a41325755c6012ed073b19",
-      "bytes": 11194,
+      "sha256": "5f618919711a9ae69589c83a7542f3b5e562ce5b6172b17cace633be3b9ac004",
+      "bytes": 11501,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
-      "sha256": "07b760d210d1231801368f4991ed128da134b6fe04efa4bb2fbb1497acf1ae13",
-      "bytes": 30783,
+      "sha256": "0dc191cec8b522608cbc3d59bc3b98f9db5b76be365a6578f68c63626f84a58a",
+      "bytes": 30947,
       "inputs": "Registered baseline and standalone changes"
     },
     "arm_hierarchy.py": {
@@ -127,10 +127,10 @@
       "bytes": 4307
     },
     "docs/editor.png": {
-      "purpose": "Privacy-reviewed native 0.7.1 editor controls for the complete README guide.",
-      "inputs": "Actual Slicer 5.12.0 design phase before inputs are selected; no private paths or annotations.",
-      "sha256": "d93034d6e925ab9caa2a2d6bf0b8ee2e8bcceb275a3b4de05a5b8a9a3f3d9693",
-      "bytes": 106712
+      "purpose": "Native versioned GUI screenshot for README.",
+      "inputs": "Actual Slicer 5.12.0 design capture with current 0.7.2 module; blank inputs, no private paths.",
+      "sha256": "6975470be6edcbc54987b2ed38cbed46cca28f5fa614b3df05a6140de4aecded",
+      "bytes": 108377
     }
   },
   "manifest_self": {
@@ -507,7 +507,13 @@
       "scope": "Read-only all left nodes and paired right selections; no volumes or scene mutation."
     }
   },
-  "validation": {
+  "gui_update": {
+    "baseline_commit": "b81a09c4c872865f1487298695794f4d9e306dec",
+    "reference": "VisPa light GUI palette as design reference only; no copied module or dependency",
+    "changes": "Darker active/inactive text and search placeholder; purple region action; navy/teal sections; explicit teal L/amber R cues; corrected Close signal callback.",
+    "images": "Actual blank-input Slicer 5.12.0 dialogs from the current tested module; private paths and data absent."
+  },
+  "gui_colour_validation_0_7_1": {
     "tested_module_sha256": "6590d3d20fe98b240dd45b84ee85fd3d8b62a1f40884411009cf67132fe95a66",
     "synthetic_tests": {
       "passed": 49,
@@ -544,10 +550,39 @@
     },
     "scope": "GUI-only update; AST comparison confirms all existing non-GUI functions unchanged. Earlier insula, CLI and 837-node audit evidence retained in baseline_validation_0_7_0 with its original tested hashes."
   },
-  "gui_update": {
-    "baseline_commit": "b81a09c4c872865f1487298695794f4d9e306dec",
-    "reference": "VisPa light GUI palette as design reference only; no copied module or dependency",
-    "changes": "Darker active/inactive text and search placeholder; purple region action; navy/teal sections; explicit teal L/amber R cues; corrected Close signal callback.",
-    "images": "Actual blank-input Slicer 5.12.0 dialogs from the current tested module; private paths and data absent."
+  "validation": {
+    "tested_module_sha256": "16a61b824e62f8805cd5c0a4cc7e03564683244c73af140a5dc04a03f12a3984",
+    "synthetic_tests": {
+      "passed": 49,
+      "failed": 0,
+      "command": "python -m unittest discover -s tests -p test_*.py -q",
+      "python": "3.10.20",
+      "numpy": "1.26.4",
+      "nibabel": "5.4.2"
+    },
+    "cli_version": "ARMins 0.7.2 (local/unreleased)",
+    "native_slicer": {
+      "version": "5.12.0",
+      "status": "passed",
+      "design_checks": [
+        "dialog-local VisPa palette and redundant L/R colour-direction cues leave scene and Slicer theme unchanged",
+        "dark inactive text and placeholder; distinct purple region action retains disabled state",
+        "setup help opens without scene changes and exposes official links and copyable install command",
+        "native setup-help Close button accepts the Qt clicked signal and closes the dialog",
+        "main title/banner and help title show the authoritative version; mirror controls retained; screenshot saved"
+      ],
+      "screenshots_visually_reviewed": true
+    },
+    "scope": "Version display only. Existing function AST differences limited to show_gui, show_atlas_setup_help and _build_cli_parser; prior hierarchy/mirror checks retained under their tested hashes."
+  },
+  "version_display": {
+    "source": "armins.py VERSION",
+    "surfaces": [
+      "main GUI title and header",
+      "setup-help title",
+      "CLI --version and help",
+      "generated receipts"
+    ],
+    "baseline_commit": "5b9f0f2d493026e2327083f3f9e5df468461a3ca"
   }
 }

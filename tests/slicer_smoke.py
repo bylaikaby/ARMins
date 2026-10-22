@@ -1,6 +1,6 @@
 """Isolated native Slicer integration check for ARMins.
 
-Version: 0.7.1 (local/unreleased)
+Version: 0.7.2 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: candidate
@@ -57,7 +57,8 @@ def main():
             slicer.app.processEvents()
             import qt
             assert '#263746' in dialog.styleSheet and '#168a91' in dialog.styleSheet
-            assert dialog.findChild(qt.QLabel, 'ARMinsBanner') is not None
+            assert ns['VERSION'] in dialog.windowTitle
+            assert ns['VERSION'] in dialog.findChild(qt.QLabel, 'ARMinsBanner').text
             side = dialog.findChild(qt.QComboBox, 'WorkingHemisphere')
             direction = dialog.findChild(qt.QLabel, 'MirrorDirection')
             scene_before_side = slicer.mrmlScene.GetNumberOfNodes()
@@ -91,6 +92,7 @@ def main():
             slicer.app.processEvents()
             help_dialog = dialog.findChild(qt.QDialog, 'NMTAtlasSetupHelpDialog')
             assert help_dialog is not None and help_dialog.isVisible()
+            assert ns['VERSION'] in help_dialog.windowTitle
             help_label = help_dialog.findChild(qt.QLabel, 'NMTAtlasSetupGuidance')
             assert all(url in help_label.text for url in (
                 ns['NMT_ARCHIVE_URL'], ns['NMT_INSTALL_URL'], ns['ARMINS_ATLAS_SETUP_URL']))
@@ -123,7 +125,7 @@ def main():
             assert not help_dialog.isVisible()
             passed('native setup-help Close button accepts the Qt clicked signal and closes the dialog')
             receipt['buttons'] = labels
-            passed('actual native dialog contains both mirror controls; screenshot saved')
+            passed('main title/banner and help title show the authoritative version; mirror controls retained; screenshot saved')
             dialog.close()
         elif phase == 'hierarchy':
             import vtk

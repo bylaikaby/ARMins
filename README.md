@@ -22,6 +22,11 @@ review and saving. Optional command-line operations follow the GUI workflow.
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs) ·
 [Command line](#optional-command-line-tools)
 
+Current tool version: **0.7.2 (local/unreleased)**. The GUI title/header and
+`python armins.py --version` show the same value. See [CHANGELOG.md](CHANGELOG.md)
+for dated changes and validation.
+
+
 ## Quick start
 
 1. Download or clone this repository, then obtain the two atlas inputs below.
@@ -417,6 +422,10 @@ validation.
 The 0.7.1 GUI update passed the same 49 synthetic tests, five native design/help
 checks and 11 native hierarchy checks after visual review. Its stylesheet is
 local to the ARMins dialogs; atlas and mirror algorithms are unchanged.
+
+Version 0.7.2 adds visible GUI/CLI version reporting; its 49 synthetic tests
+and five native design/help checks passed. Prior scientific behavior evidence
+retains its original tested version and hashes in provenance.json.
 
 The array, editor, NIfTI and CLI tests use synthetic fixtures. Native Slicer
 testing uses explicitly supplied external inputs and a separate testing scene;
