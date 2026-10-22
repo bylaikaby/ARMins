@@ -104,8 +104,8 @@
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
-      "sha256": "af623fa8e9fca985a42d7a3cf07661623026915c8c2eec2ef0fc291ee81a131c",
-      "bytes": 30784,
+      "sha256": "07b760d210d1231801368f4991ed128da134b6fe04efa4bb2fbb1497acf1ae13",
+      "bytes": 30783,
       "inputs": "Registered baseline and standalone changes"
     },
     "arm_hierarchy.py": {

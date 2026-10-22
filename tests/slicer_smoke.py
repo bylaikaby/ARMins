@@ -78,7 +78,7 @@ def main():
             search = dialog.findChild(qt.QLineEdit, 'ARMHierarchySearch')
             assert search.palette.color(qt.QPalette.Disabled, qt.QPalette.PlaceholderText).name() == '#334a59'
             passed('dark inactive text and placeholder; distinct purple region action retains disabled state')
-            image_path = output / 'mirror_dialog.png' 
+            image_path = output / 'mirror_dialog.png'
             assert dialog.grab().save(str(image_path))
             receipt['screenshot'] = str(image_path)
             labels = [button.text for button in dialog.findChildren(qt.QPushButton)]
