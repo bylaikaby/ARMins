@@ -32,8 +32,8 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "6aab73313e4f4a1378cfb30e8fdd3d1189cb08e9532d8b16549455e8f93872ca",
-      "bytes": 28197,
+      "sha256": "db42390819c8d567c2fd9ebe72d4d003ce8189e72b1d5defb4a88b9cd9bd7fa9",
+      "bytes": 27850,
       "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
@@ -44,8 +44,8 @@
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "d55fb91acdfb2723596b4137a9869a5bcc6689b09967fd86e95d1920d2673cb2",
-      "bytes": 5609,
+      "sha256": "fc5266b983f324addeb5a8cf6f794d31403137d99ab1335f6734ec6037cbac4a",
+      "bytes": 5860,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,8 +74,8 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "db1bcdca16b968a2da5303182c4795c0e49908abdbff4afaa644e142742ae0bf",
-      "bytes": 10583,
+      "sha256": "133c1faee676a3d59180b38650bfbcad96935123fcb94ee74188e12f8e4514b9",
+      "bytes": 11612,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
@@ -201,7 +201,8 @@
     "Native test changes are synthetic and in-memory; no human annotation distributed.",
     "Full bilateral integer-label NIfTI export/merge is not implemented.",
     "Project code license not selected; external NMT/ARM terms and citations remain separate.",
-    "Display colors are paired consistently but may repeat for large groups; they are not an anatomical identity map."
+    "Display colors are paired consistently but may repeat for large groups; they are not an anatomical identity map.",
+    "The reported user's initialization failure is unidentified without its traceback/runtime. Fresh cloud functional passes do not certify every PC, older Slicer, graphics driver or anatomy; Windows VM rendering remains limited by unsupported GLSL1.50."
   ],
   "standalone_baseline": {
     "commit": "40e117c55ac18eba2bcc07800c9cc101a3ba50c7",
@@ -665,12 +666,85 @@
       "windows_rendering_limit": "Initial default graphics emitted OpenGL warnings; dialog startup succeeded. Subsequent load workflow selects bundled Qt software OpenGL."
     },
     "conda_environment": {
-      "status": "pending cloud solve/tests",
-      "recipe": "environment.yml"
+      "status": "passed",
+      "recipe": "environment.yml",
+      "run": "https://github.com/bylaikaby/ARMins/actions/runs/39740223161",
+      "python": "3.12.15",
+      "numpy": "2.5.4",
+      "nibabel": "5.4.2",
+      "synthetic_tests_passed": 52,
+      "resolved_packages": "conda list --explicit recorded in run log; recipe has bounds, not a cross-platform lockfile"
     },
     "cloud_current_native_load": {
-      "status": "pending",
-      "workflow": ".github/workflows/slicer-cloud.yml"
+      "status": "functional checks passed; Windows rendering limited",
+      "run": "https://github.com/bylaikaby/ARMins/actions/runs/39740224459",
+      "test_commit": "3c3baae2e08d2f5837dd910a24cbec72a327f288",
+      "tested_source_sha256": "b794bbb6a9335b58f53fe61fbec04d120dcd2dc37e2d45286cd2e5d6077cfc02",
+      "targets": {
+        "linux": {
+          "status": "passed",
+          "checks": [
+            "real ARM CSV resolves ACC L3 to five explicit bilateral leaves with stable paired profile identity",
+            "preloaded insula groups and Segment Editor state captured before hierarchy selection",
+            "GUI hierarchy search and pending selection do not mutate MRML scene",
+            "hierarchy GUI load creates both five-leaf groups, keeps scope geometry, and initially focuses the selected left group",
+            "paired right-side selection reuses the same groups and focuses the right working group",
+            "mirror uses the CSV-derived bilateral ID map; tagged helper is excluded from partition, hidden, and preserved",
+            "right-to-left hierarchy mirror round-trips every selected L6 leaf and helper mask",
+            "hierarchy candidate save/reload retains the profile receipt and helper annotation",
+            "native hierarchy mirror button creates a separate candidate and enables candidate saving",
+            "hierarchy mirroring leaves pre-existing insula working groups and Segment Editor references/mask/effect unchanged",
+            "registered template, atlas, and hierarchy CSV hashes are unchanged"
+          ],
+          "gui_dependencies_ready": true,
+          "source_sha256": "b794bbb6a9335b58f53fe61fbec04d120dcd2dc37e2d45286cd2e5d6077cfc02",
+          "runtime": {
+            "python": "3.12.10 (main, Jun 23 2026, 22:29:12) [GCC 14.2.1 20250110 (Red Hat 14.2.1-7)]",
+            "numpy": "2.4.6",
+            "os": "Linux-6.8.0-1070-azure-x86_64-with-glibc2.35"
+          }
+        },
+        "windows": {
+          "status": "passed",
+          "checks": [
+            "real ARM CSV resolves ACC L3 to five explicit bilateral leaves with stable paired profile identity",
+            "preloaded insula groups and Segment Editor state captured before hierarchy selection",
+            "GUI hierarchy search and pending selection do not mutate MRML scene",
+            "hierarchy GUI load creates both five-leaf groups, keeps scope geometry, and initially focuses the selected left group",
+            "paired right-side selection reuses the same groups and focuses the right working group",
+            "mirror uses the CSV-derived bilateral ID map; tagged helper is excluded from partition, hidden, and preserved",
+            "right-to-left hierarchy mirror round-trips every selected L6 leaf and helper mask",
+            "hierarchy candidate save/reload retains the profile receipt and helper annotation",
+            "native hierarchy mirror button creates a separate candidate and enables candidate saving",
+            "hierarchy mirroring leaves pre-existing insula working groups and Segment Editor references/mask/effect unchanged",
+            "registered template, atlas, and hierarchy CSV hashes are unchanged"
+          ],
+          "gui_dependencies_ready": true,
+          "source_sha256": "b794bbb6a9335b58f53fe61fbec04d120dcd2dc37e2d45286cd2e5d6077cfc02",
+          "runtime": {
+            "python": "3.12.10 (main, Jun 23 2026, 23:03:58) [MSC v.1944 64 bit (AMD64)]",
+            "numpy": "2.4.6",
+            "os": "Windows-2025Server-10.0.26100-SP0"
+          }
+        }
+      },
+      "data": "Official fixed/checksummed Slicer5.12.0 and AFNI symmetric NMTv2.1 downloads; no local cache, config or packages copied; no pip installs into Slicer.",
+      "graphics": {
+        "linux": "Xvfb/Mesa; no graphics errors in retrieved console log",
+        "windows": "Bundled Qt software OpenGL; unsupported GLSL1.50 shader errors remain. Dialog/MRML/array checks passed; 3D rendering not verified."
+      },
+      "scope": "Import from spaced checkout path/unrelated cwd; GUI preflight, default insula and ACC loading, hierarchy selection, L/R focus, mirror/helper/preservation/save-reload, unchanged immutable input hashes."
+    },
+    "cloud_pip": {
+      "status": "passed",
+      "run": "https://github.com/bylaikaby/ARMins/actions/runs/39740223161",
+      "targets": [
+        "windows-latest",
+        "ubuntu-latest"
+      ],
+      "passed_per_target": 52,
+      "numpy": "2.5.4",
+      "nibabel": "5.4.2"
     }
   }
 }

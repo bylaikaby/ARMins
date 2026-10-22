@@ -84,7 +84,8 @@ conda env update -n armins-cli -f environment.yml
 conda run -n armins-cli python armins.py doctor
 ```
 
-The recipe installs Python 3.12, NumPy >=1.24,<3 and nibabel >=5.1,<6.
+The tool preflight requires Python >=3.10. The recipe selects Python 3.12,
+NumPy >=1.24,<3 and nibabel >=5.1,<6.
 It is a bounded recipe, not a platform lockfile; CI records the actual resolved
 package list. Ordinary Python with `python -m pip install -r requirements.txt`
 is also supported. `doctor` is read-only, prints versions/missing requirements
@@ -451,64 +452,52 @@ existing destinations. A supplied 3-D ARM6 file is returned without duplication.
 
 ## Validation and review
 
-A manually dispatched **Fresh-machine Slicer** workflow installs official Slicer
-5.12.0 on new GitHub-hosted Windows and Ubuntu VMs. It imports ARMins from a path
-containing spaces and an unrelated working directory, without pip-installing
-packages into Slicer. Run `design`, review the screenshots, then run `hierarchy`
-or `behavior` with the public AFNI NMT/ARM archive. Each package/input is checked
-against its registered checksum. No local configuration, cache or atlas is copied.
-The GPU-less Windows VM uses Slicer's bundled Qt software OpenGL (`QT_OPENGL=software`);
-Linux uses Xvfb/Mesa. These settings belong to the CI process, not global PC settings.
-Small receipts, runtime details, logs and screenshots are retained for 14 days;
-no atlas volumes or edited segmentations are uploaded as artifacts.
+Current 0.7.4 verification:
 
-This workflow extends the existing synthetic Python CI. Cloud GUI startup passed on Windows Server 2025 and Ubuntu 22.04 in
-[run 39738903061](https://github.com/bylaikaby/ARMins/actions/runs/39738903061).
-The first Ubuntu attempt stopped before Python because libxcb-shape.so.0 was
-missing; installing its OS prerequisite fixed that launch. The Windows dialog
-passed with default VM graphics warnings; the subsequent load test uses bundled
-software OpenGL. Updated dependency/Conda and native load results are pending;
-see provenance.json and Actions for the observed status. It does not establish compatibility with every PC or GPU.
+| Environment | Installation | Observed result |
+|---|---|---|
+| Slicer 5.12.0, fresh Windows Server 2025 and Ubuntu 22.04 VMs | Official checksummed Slicer and public AFNI archive; no additional Python packages | [11 native checks per OS passed](https://github.com/bylaikaby/ARMins/actions/runs/39740224459): import, dependency readiness, GUI input loading, hierarchy selection, L/R focus, mirrors, preservation and save/reload |
+| CLI, fresh Conda environment on Ubuntu | `environment.yml`; Python 3.12.15, NumPy 2.5.4, nibabel 5.4.2 | [Doctor ready and 52 tests passed](https://github.com/bylaikaby/ARMins/actions/runs/39740223161) |
+| CLI, fresh pip environments on Windows and Ubuntu | `requirements.txt`; NumPy 2.5.4, nibabel 5.4.2 | [52 tests per OS passed](https://github.com/bylaikaby/ARMins/actions/runs/39740223161) |
+| Local Slicer 5.12.0 | Bundled Python 3.12.10/NumPy 2.4.6 | Five native design/help checks and automatic GUI preflight passed; screenshots reviewed before load tests |
 
+**Graphics limit:** the Windows VM logged unsupported GLSL 1.50 even with
+bundled Qt software OpenGL. Its dialog/MRML/array checks passed, but **3D
+rendering is not verified**. Ubuntu logged no graphics errors. The first Ubuntu
+startup attempt lacked `libxcb-shape.so.0` before Python; installing its OS
+prerequisite fixed the launch. Neither Conda nor pip replaces OS graphics/X11
+libraries. A fresh VM test does not certify every PC, older Slicer or GPU.
+
+A separate read-only pairing audit passed all 837 left hierarchy nodes and their
+right counterparts. Earlier insula behavior, template-symmetry and CLI checks
+retain their original tested versions/hashes in [provenance.json](provenance.json)
+and [CHANGELOG.md](CHANGELOG.md). Software checks do not establish anatomical
+boundaries, physical laterality or biological symmetry. The user's original
+startup failure remains unidentified without its traceback and runtime version.
+
+Rerun the synthetic tests in the CLI environment:
 
 ```sh
+python armins.py doctor
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-The 0.7.0 hierarchy snapshot passed **49 distinct synthetic tests**, a read-only pairing
-audit of all **837 left-side hierarchy nodes** and their right counterparts,
-and separate native **Slicer 5.12.0** checks for both the insula and ACC groups.
-The native tests exercise search/pending-selection non-mutation, L/R focus,
-paired group reuse, exact mirroring, preserved earlier groups/editor state,
-hidden helpers, and save/reload. These are technical checks, not anatomical
-validation.
+In **Actions > Fresh-machine Slicer**, run `design`, inspect its screenshots,
+then run `hierarchy` or `behavior`. Each job uses a new GitHub-hosted Windows or
+Ubuntu VM, a checkout path with spaces and an unrelated working directory.
+Windows CI selects bundled Qt software OpenGL; Linux uses Xvfb/Mesa. These
+settings apply only to the test process. No local config, cache, atlas or
+packages are copied. Public package/input checksums are verified; small
+receipts, logs and screenshots are retained for 14 days. Atlas volumes and
+edited segmentations are not uploaded as artifacts.
 
-The 0.7.1 GUI update passed the same 49 synthetic tests, five native design/help
-checks and 11 native hierarchy checks after visual review. Its stylesheet is
-local to the ARMins dialogs; atlas and mirror algorithms are unchanged.
-
-Version 0.7.2 adds visible GUI/CLI version reporting; its 49 synthetic tests
-and five native design/help checks passed. Prior scientific behavior evidence
-retains its original tested version and hashes in provenance.json.
-
-Version 0.7.4 passed 52 local synthetic tests, including missing site packages,
-wrong GUI interpreter and read-only doctor reports, plus native GUI preflight.
-Fresh Conda and updated cloud load results are tracked in provenance.json.
-
-The array, editor, NIfTI and CLI tests use synthetic fixtures. Native Slicer
-testing uses explicitly supplied external inputs and a separate testing scene;
-see `tests/slicer_smoke.py` for its required environment variables. The behavior
-phase needs Slicer's main-window layout manager. Use `--testing --no-splash
---python-script tests/slicer_smoke.py`, with an absolute script path when needed.
-The setup-help/design phase may also use `--no-main-window`.
-
-The exact tested code hashes and validation scope are recorded in
-[provenance.json](provenance.json). Technical validation does not establish
-anatomical boundary accuracy, physical laterality or biological symmetry.
-
-Review in order: verify the two selected input files; inspect one edited side
-and its separate mirror candidate; then save/reload and review parcel identity
-and extent. Scientific acceptance remains a human judgment.
+The native harness is `tests/slicer_smoke.py`; it documents explicit input and
+output environment variables. Run it with Slicer `--testing --no-splash
+--python-script /absolute/path/to/tests/slicer_smoke.py`. The behavior phase
+needs Slicer's main-window layout manager. Review in order: matching input
+files and dependency readiness; the chosen parent/descendants and working side;
+then the edited side and its separate mirror candidate after save/reload.
+Scientific acceptance remains a human judgment.
 
 ## Repository and attribution
 

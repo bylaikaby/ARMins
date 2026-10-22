@@ -24,6 +24,18 @@ The default setup uses the provider's supplied 3-D ARM6 image, avoiding an
 unnecessary extraction. Hierarchical preparation remains an optional bounded
 operation. Template images remain external references; source data are preserved.
 
+## Current verification and review
+
+- Current source: 0.7.4; CLI Conda/pip and native Windows/Ubuntu runs above are
+  tied to the exact armins.py hash in provenance.json. No local config/cache or
+  atlas data was copied to cloud VMs; only public provider downloads were used.
+- Review in order: (1) follow README's GUI versus CLI dependency path; `doctor`
+  should report ready; (2) inspect Actions receipts/checks for the selected OS;
+  (3) open the atlas in a supported desktop graphics environment and judge its
+  rendering and anatomy. Windows VM functional passes do not certify rendering.
+- Original reported initialization bug remains unidentified without the user's
+  first traceback and Slicer version; cloud startup/import/load paths passed.
+
 ## Operations journal
 
 ### 2026-10-22 | Agent Codex | Dependency checks and isolated CLI environment
@@ -43,8 +55,11 @@ operation. Template images remain external references; source data are preserved
   to stabilize new source hashes; retain earlier recorded hashes as historical.
 - Local dependency tests cover installed CLI, missing site packages, wrong GUI
   interpreter, native Slicer preflight and preserved existing behavior. Fresh
-  Conda solve and current cloud hierarchy/load tests are pending; user traceback
-  remains unknown. No scientific atlas-boundary or GPU acceptance is inferred.
+  Conda solved Python3.12.15/NumPy2.5.4/nibabel5.4.2; 52 tests passed in each
+  cloud pip/Conda job (run39740223161). Current cloud hierarchy tests passed
+  11/11 on each OS with identical source hash (run39740224459). Windows
+  software OpenGL still logged unsupported GLSL1.50; 3D rendering is unverified.
+  Ubuntu logged no graphics errors. User traceback remains unknown. No scientific atlas-boundary or GPU acceptance is inferred.
 
 
 ### 2026-10-22 | Agent Codex | Fresh cloud-machine initialization investigation

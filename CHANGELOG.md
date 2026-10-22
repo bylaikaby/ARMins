@@ -12,8 +12,11 @@ One consolidated history. README.md is the operator guide.
 - Add consistent LF source checkout rules after cloud Windows/Linux byte hashes
   differed only by line endings. Use bundled Qt software OpenGL for GPU-less
   Windows cloud load tests; do not alter application/global PC graphics settings.
-- Local checks: 52 synthetic tests and native GUI/preflight checks; fresh Conda
-  and current native atlas-loading cloud results pending.
+- Validation: 52 tests passed locally and in each fresh cloud pip/Conda job;
+  native Slicer import/preflight and 11 hierarchy/load/mirror/save checks passed
+  on each fresh Windows/Ubuntu VM. Actual source hashes agree across OS.
+  Windows cloud GLSL 1.50 shader errors remain a rendering limitation; Ubuntu
+  logged no graphics errors. See provenance.json for run links and exact scope.
 
 ## 0.7.3 - 2026-10-22 (local/unreleased)
 
