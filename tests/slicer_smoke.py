@@ -1,6 +1,6 @@
 """Isolated native Slicer integration check for ARMins.
 
-Version: 0.7.0 (local/unreleased)
+Version: 0.7.1 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: candidate
@@ -51,12 +51,36 @@ def main():
         ns = runpy.run_path(str(loader), run_name='armins_mirror_native_test')
         glob = ns['run'].__globals__
         if phase == 'design':
+            main_window = slicer.util.mainWindow()
+            main_style_before = main_window.styleSheet if main_window is not None else None
             dialog = ns['show_gui']()
             slicer.app.processEvents()
-            image_path = output / 'mirror_dialog.png'
+            import qt
+            assert '#263746' in dialog.styleSheet and '#168a91' in dialog.styleSheet
+            assert dialog.findChild(qt.QLabel, 'ARMinsBanner') is not None
+            side = dialog.findChild(qt.QComboBox, 'WorkingHemisphere')
+            direction = dialog.findChild(qt.QLabel, 'MirrorDirection')
+            scene_before_side = slicer.mrmlScene.GetNumberOfNodes()
+            side.setCurrentIndex(1)
+            assert direction.text == 'R → L' and '#97521f' in direction.styleSheet
+            assert slicer.mrmlScene.GetNumberOfNodes() == scene_before_side
+            right_image = output / 'mirror_dialog_right.png'
+            assert dialog.grab().save(str(right_image))
+            receipt['right_side_screenshot'] = str(right_image)
+            side.setCurrentIndex(0)
+            assert direction.text == 'L → R' and '#126b78' in direction.styleSheet
+            if main_window is not None:
+                assert main_window.styleSheet == main_style_before
+            passed('dialog-local VisPa palette and redundant L/R colour-direction cues leave scene and Slicer theme unchanged')
+            use_region = dialog.findChild(qt.QPushButton, 'UseSelectedRegionButton')
+            assert use_region.property('arminsRole') == 'region' and not use_region.enabled
+            assert '#59416f' in dialog.styleSheet and '#334a59' in dialog.styleSheet
+            search = dialog.findChild(qt.QLineEdit, 'ARMHierarchySearch')
+            assert search.palette.color(qt.QPalette.Disabled, qt.QPalette.PlaceholderText).name() == '#334a59'
+            passed('dark inactive text and placeholder; distinct purple region action retains disabled state')
+            image_path = output / 'mirror_dialog.png' 
             assert dialog.grab().save(str(image_path))
             receipt['screenshot'] = str(image_path)
-            import qt
             labels = [button.text for button in dialog.findChildren(qt.QPushButton)]
             assert any('Mirror selected side' in label for label in labels), labels
             assert any('Save mirrored candidate' in label for label in labels), labels
@@ -94,8 +118,10 @@ def main():
             assert help_dialog.grab().save(str(help_image))
             receipt['atlas_setup_help_screenshot'] = str(help_image)
             passed('setup help opens without scene changes and exposes official links and copyable install command')
-            help_dialog.close()
+            help_dialog.findChild(qt.QPushButton, 'CloseNMTSetupHelpButton').click()
             slicer.app.processEvents()
+            assert not help_dialog.isVisible()
+            passed('native setup-help Close button accepts the Qt clicked signal and closes the dialog')
             receipt['buttons'] = labels
             passed('actual native dialog contains both mirror controls; screenshot saved')
             dialog.close()

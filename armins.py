@@ -1,6 +1,6 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.7.0 (local/unreleased)
+Version: 0.7.1 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: experimental
@@ -24,7 +24,7 @@ try:
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.7.0 (local/unreleased)"
+VERSION = "0.7.1 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):
@@ -1368,6 +1368,93 @@ ARMINS_ATLAS_SETUP_URL = "https://github.com/bylaikaby/ARMins#atlas-setup"
 NMT_INSTALL_COMMAND = "@Install_NMT -nmt_ver 2.1 -sym sym -install_dir ./atlas-data"
 
 
+def _apply_gui_theme(dialog):
+    """Apply a dialog-local navy/teal palette inspired by VisPa's light GUI."""
+    dialog.setStyleSheet("""
+        QDialog { background: #f6f8fa; color: #102b3a; }
+        QLabel { color: #102b3a; }
+        QLabel[arminsRole="banner"] {
+            background: #263746; color: #f4f7f9;
+            border-radius: 6px; padding: 9px 14px;
+        }
+        QLabel[arminsRole="section"] {
+            color: #126b78; font-weight: bold;
+            padding: 4px 0px 3px 0px; border-bottom: 1px solid #d9e3e9;
+        }
+        QLabel[arminsRole="note"] {
+            background: #edf6f7; border: 1px solid #d9e3e9;
+            border-left: 3px solid #168a91; border-radius: 4px; padding: 7px;
+        }
+        QLabel[arminsRole="status"] {
+            background: #eef3f6; border: 1px solid #d9e3e9;
+            border-radius: 4px; padding: 6px; color: #102b3a;
+        }
+        QLineEdit, QComboBox {
+            background: #ffffff; color: #102b3a; border: 1px solid #c6d5df;
+            border-radius: 4px; padding: 3px 7px; min-height: 16px;
+            selection-background-color: #168a91; selection-color: #ffffff;
+        }
+        QLineEdit:focus, QComboBox:focus { border: 1px solid #168a91; }
+        QComboBox QAbstractItemView {
+            background: #ffffff; color: #102b3a;
+            selection-background-color: #edf6f7; selection-color: #126b78;
+        }
+        QPushButton {
+            background: #ffffff; color: #102b3a; border: 1px solid #c6d5df;
+            border-radius: 4px; padding: 4px 10px; min-height: 16px;
+        }
+        QPushButton:hover { background: #edf6f7; border-color: #168a91; }
+        QPushButton:focus { border: 2px solid #168a91; }
+        QPushButton[arminsRole="primary"] {
+            background: #168a91; color: #ffffff; border-color: #168a91;
+            font-weight: bold;
+        }
+        QPushButton[arminsRole="primary"]:hover { background: #126b78; }
+        QPushButton[arminsRole="region"] {
+            background: #6f4a9e; color: #ffffff; border-color: #6f4a9e;
+            font-weight: bold;
+        }
+        QPushButton[arminsRole="region"]:hover { background: #583780; }
+        QPushButton[arminsRole="mirror"] {
+            background: #263746; color: #f4f7f9; border-color: #263746;
+            font-weight: bold;
+        }
+        QPushButton[arminsRole="mirror"]:hover { background: #365065; }
+        QPushButton[arminsRole="save"] {
+            background: #edf6f7; color: #126b78; border-color: #a9cdd1;
+        }
+        QPushButton:disabled, QPushButton[arminsRole="primary"]:disabled,
+        QPushButton[arminsRole="mirror"]:disabled,
+        QPushButton[arminsRole="save"]:disabled,
+        QLineEdit:disabled, QComboBox:disabled {
+            background: #e9eef2; color: #334a59; border: 1px solid #d9e3e9;
+        }
+        QPushButton[arminsRole="region"]:disabled {
+            background: #eee8f5; color: #59416f; border: 1px solid #cdbfdf;
+        }
+    """)
+
+
+def _gui_section(form, parent, title):
+    """Add a compact visual divider without changing any workflow controls."""
+    import qt
+    heading = qt.QLabel(title, parent)
+    heading.setProperty("arminsRole", "section")
+    form.addRow(heading)
+
+
+def _colour_working_side(side_combo, direction):
+    """Redundant colour/text cues: teal for L, amber for R."""
+    left = side_combo.currentText == "L"
+    accent, soft = ("#126b78", "#edf6f7") if left else ("#97521f", "#fff3e6")
+    side_combo.setStyleSheet(
+        f"QComboBox {{ color: {accent}; background: {soft}; "
+        f"border: 1px solid {accent}; font-weight: bold; }}")
+    direction.setStyleSheet(
+        f"QLabel {{ color: {accent}; background: {soft}; "
+        f"border: 1px solid {accent}; border-radius: 4px; padding: 4px 8px; font-weight: bold; }}")
+
+
 def show_atlas_setup_help(parent=None):
     """Open a user-invoked help dialog with official links and a copyable command."""
     _require_slicer()
@@ -1377,6 +1464,7 @@ def show_atlas_setup_help(parent=None):
     help_dialog.setObjectName("NMTAtlasSetupHelpDialog")
     help_dialog.setWindowTitle("Set up NMT v2.1 symmetric atlas")
     help_dialog.setMinimumWidth(560)
+    _apply_gui_theme(help_dialog)
     layout = qt.QVBoxLayout(help_dialog)
     guidance = qt.QLabel(
         "<b>Atlas setup</b><br>"
@@ -1407,13 +1495,15 @@ def show_atlas_setup_help(parent=None):
     buttons = qt.QHBoxLayout()
     copy_button = qt.QPushButton("Copy install command", help_dialog)
     copy_button.setObjectName("CopyNMTInstallCommandButton")
+    copy_button.setProperty("arminsRole", "primary")
     close_button = qt.QPushButton("Close", help_dialog)
+    close_button.setObjectName("CloseNMTSetupHelpButton")
     buttons.addWidget(copy_button)
     buttons.addStretch(1)
     buttons.addWidget(close_button)
     layout.addLayout(buttons)
-    copy_button.clicked.connect(lambda: slicer.app.clipboard().setText(NMT_INSTALL_COMMAND))
-    close_button.clicked.connect(help_dialog.close)
+    copy_button.clicked.connect(lambda *_: slicer.app.clipboard().setText(NMT_INSTALL_COMMAND))
+    close_button.clicked.connect(lambda *_: help_dialog.close())
     help_dialog.show()
     return help_dialog
 
@@ -1433,9 +1523,21 @@ def show_gui():
 
     dialog = qt.QDialog(slicer.util.mainWindow())
     dialog.setObjectName("InsulaAtlasEditorDialog")
-    dialog.setWindowTitle("Insula atlas editor")
+    dialog.setWindowTitle("ARMins · Atlas editor")
     dialog.setMinimumWidth(680)
+    _apply_gui_theme(dialog)
     form = qt.QFormLayout(dialog)
+    form.setContentsMargins(12, 12, 12, 12)
+    form.setHorizontalSpacing(14)
+    form.setVerticalSpacing(5)
+
+    banner = qt.QLabel(
+        "<b>ARMins</b> &nbsp; Atlas refinement<br>"
+        "<span style='color:#a9c0cc'>NMT v2.1 symmetric · Edit one side, review its mirror</span>",
+        dialog)
+    banner.setObjectName("ARMinsBanner")
+    banner.setProperty("arminsRole", "banner")
+    form.addRow(banner)
 
     setup_help_button = qt.QPushButton("NMT v2.1 setup help", dialog)
     setup_help_button.setObjectName("NMTv21SetupHelpButton")
@@ -1446,6 +1548,7 @@ def show_gui():
         ATLAS_SETUP_HELP_DIALOG = show_atlas_setup_help(dialog)
 
     setup_help_button.connect("clicked()", open_setup_help)
+    _gui_section(form, dialog, "01  ·  ATLAS INPUTS AND REGION")
 
     def file_row(default_path, label):
         row = qt.QWidget(dialog)
@@ -1488,6 +1591,10 @@ def show_gui():
     search_edit = qt.QLineEdit(search_row)
     search_edit.setObjectName("ARMHierarchySearch")
     search_edit.setPlaceholderText("Search name, abbreviation, or exact numeric index")
+    search_palette = search_edit.palette
+    search_palette.setColor(qt.QPalette.PlaceholderText, qt.QColor("#334a59"))
+    search_palette.setColor(qt.QPalette.Disabled, qt.QPalette.PlaceholderText, qt.QColor("#334a59"))
+    search_edit.setPalette(search_palette)
     search_side = qt.QComboBox(search_row)
     search_side.addItems(["Both", "L", "R"])
     search_level = qt.QComboBox(search_row)
@@ -1502,12 +1609,16 @@ def show_gui():
     hierarchy_results.setObjectName("ARMHierarchyResults")
     form.addRow("Search results:", hierarchy_results)
     use_region_button = qt.QPushButton("Use selected region (pending)", dialog)
+    use_region_button.setObjectName("UseSelectedRegionButton")
+    use_region_button.setProperty("arminsRole", "region")
     form.addRow(use_region_button)
     region_preview = qt.QLabel("Insula preset is selected. Hierarchy search does not change the scene.", dialog)
     region_preview.setWordWrap(True)
     region_preview.setObjectName("ARMHierarchyProfilePreview")
+    region_preview.setProperty("arminsRole", "note")
     form.addRow("Region preview:", region_preview)
 
+    _gui_section(form, dialog, "02  ·  WORKING HEMISPHERE")
     side_combo = qt.QComboBox(dialog)
     side_combo.addItems(["L", "R"])
     side_combo.setObjectName("WorkingHemisphere")
@@ -1602,19 +1713,17 @@ def show_gui():
     region_mode.currentIndexChanged.connect(lambda *_: search_enable(region_mode.currentIndex == 1))
     search_enable(False)
     guidance = qt.QLabel(
-        "Guidance\n"
-        "1. Choose a 3-D template and ARM level-6 compatible label map. "
-        "The insula preset requires its 16 ARM L6 IDs; hierarchy mode requires only the selected region's bilateral L6 leaves.\n"
-        "2. Load checks that both files have matching image grids. Nothing is resampled.\n"
-        "3. Select a working hemisphere and seed, apply its selected-region scope, then choose Paint. "
-        "Visible donor seeds transfer voxels; hidden siblings can overlap, which the mirror check rejects.\n"
-        "4. Finish one side, then Mirror selected side (new candidate) and Save mirrored candidate. "
-        "Both working groups are preserved.", dialog)
+        "1. Validate matching template/ARM6 grids and the selected region's bilateral labels.\n"
+        "2. Choose L or R and a parcel; apply its scope, then Paint. Visible donors transfer voxels; hidden siblings may overlap.\n"
+        "3. Finish one side, then mirror and review the new opposite-side candidate. Both working groups are preserved.", dialog)
     guidance.setWordWrap(True)
+    guidance.setProperty("arminsRole", "note")
     form.addRow(guidance)
 
     load_button = qt.QPushButton("Validate inputs and load groups", dialog)
+    load_button.setProperty("arminsRole", "primary")
     form.addRow(load_button)
+    _gui_section(form, dialog, "03  ·  EDIT, MIRROR AND SAVE")
     parcel_combo = qt.QComboBox(dialog)
     refresh_button = qt.QPushButton("Refresh parcel list", dialog)
     select_row = qt.QWidget(dialog)
@@ -1625,6 +1734,7 @@ def show_gui():
     form.addRow("Editing group / seed:", select_row)
     apply_button = qt.QPushButton("Apply scope restriction", dialog)
     save_button = qt.QPushButton("Save selected side…", dialog)
+    save_button.setProperty("arminsRole", "save")
     action_row = qt.QWidget(dialog)
     action_layout = qt.QHBoxLayout(action_row)
     action_layout.setContentsMargins(0, 0, 0, 0)
@@ -1632,7 +1742,9 @@ def show_gui():
     action_layout.addWidget(save_button)
     form.addRow(action_row)
     mirror_button = qt.QPushButton("Mirror selected side (new candidate)", dialog)
+    mirror_button.setProperty("arminsRole", "mirror")
     save_mirror_button = qt.QPushButton("Save mirrored candidate…", dialog)
+    save_mirror_button.setProperty("arminsRole", "save")
     mirror_row = qt.QWidget(dialog)
     mirror_layout = qt.QHBoxLayout(mirror_row)
     mirror_layout.setContentsMargins(0, 0, 0, 0)
@@ -1641,9 +1753,12 @@ def show_gui():
     form.addRow(mirror_row)
     direction = qt.QLabel("L → R", dialog)
     direction.setObjectName("MirrorDirection")
+    _colour_working_side(side_combo, direction)
     form.addRow("Candidate direction:", direction)
     status = qt.QLabel("Choose inputs, then validate and load. Opening this panel does not change the scene.", dialog)
     status.setWordWrap(True)
+    status.setObjectName("ARMinsStatus")
+    status.setProperty("arminsRole", "status")
     form.addRow("Status:", status)
 
     gui_ready = False
@@ -1770,6 +1885,7 @@ def show_gui():
     atlas_edit.textChanged.connect(invalidate)
     def focus_working_side(*_):
         direction.setText(f"{side_combo.currentText} → {'R' if side_combo.currentText == 'L' else 'L'}")
+        _colour_working_side(side_combo, direction)
         if not gui_ready:
             return
         refresh_parcels()

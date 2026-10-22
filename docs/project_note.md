@@ -26,6 +26,27 @@ operation. Template images remain external references; source data are preserved
 
 ## Operations journal
 
+### 2026-10-22 | Agent Codex | GUI colour and contrast refinement
+
+- Objective: add VisPa-like colour elements; follow-up requested darker text
+  and a different colour for Use selected region. Starting point was the
+  published 0.7.0 hierarchy editor. No VisPa code or dependency was imported.
+- Result: dialog-local navy/teal layout, dark active/inactive text, purple
+  region action with a pale-purple disabled state, and teal L / amber R cues.
+  Iterated compact padding and retained native dropdown arrows after visual
+  inspection. Fixed the setup-help Close signal callback.
+- Verification: reviewed actual blank-input Slicer 5.12.0 screenshots first;
+  then 49 synthetic tests and 11 native hierarchy checks passed. Five design
+  checks cover theme isolation, L/R cues, contrast/action state, help and Close.
+  AST comparison confirms all existing non-GUI functions are unchanged.
+- Review: (1) Open README's editor image and inspect text/purple action;
+  (2) choose hierarchy mode and check region selection, then L/R direction;
+  (3) review a separate mirror candidate before scientific acceptance.
+  Earlier hierarchy/manual/download/publication requests remain delivered;
+  anatomical acceptance, arbitrary ontologies, bilateral NIfTI merge/export
+  and code-license selection remain open as documented.
+
+
 ### 2026-10-22 | Agent Codex | Hierarchy region selection and symmetry-first guide
 
 - Objective: provide a complete README guide; allow either L or R as the working

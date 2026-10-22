@@ -2,6 +2,17 @@
 
 One consolidated history. README.md is the operator guide.
 
+## 0.7.1 - 2026-10-22 (local/unreleased)
+
+- Added dialog-local VisPa-inspired navy/teal styling, compact section headings,
+  darker text (including inactive search fields), and a distinct purple region
+  action with a pale disabled state. L/R cues retain explicit text and use
+  teal/amber. No scientific algorithm or atlas definition changed.
+- Fixed setup-help Close handling for Qt's clicked signal.
+- Replaced README images with reviewed native Slicer captures. Validation:
+  49 synthetic tests, five native design/help checks and 11 native hierarchy
+  checks; screenshots reviewed before behavior testing. See provenance.json.
+
 ## 0.7.0 - 2026-10-22 (local/unreleased)
 
 - Added explicit ARM hierarchy search and parent-to-level-6 grouping from an

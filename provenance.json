@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
   "recorded_date": "2026-10-22",
-  "tool_version": "0.7.0 (local/unreleased)",
+  "tool_version": "0.7.1 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -32,20 +32,20 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "381a197569445b574c1c89f2e498e7d97bd0f3630c465798a4d3498ed3e1f87d",
-      "bytes": 23016,
+      "sha256": "15905831405fd53d42c0688ffb2762cef4c191376ae1e4b8d8ad9fa1d1892d46",
+      "bytes": 23494,
       "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "bc9afc7333b0a9cafe89330a49c1f8248eb74abc76226b5032adeb900fb5b186",
-      "bytes": 96610,
-      "inputs": "Published 0.6.0 baseline plus profile-aware GUI/CLI, selected hemisphere focus and explicit correspondence integration."
+      "sha256": "6590d3d20fe98b240dd45b84ee85fd3d8b62a1f40884411009cf67132fe95a66",
+      "bytes": 101771,
+      "inputs": "Published 0.7.0 baseline plus dialog-local GUI styling and help Close signal fix; atlas algorithms unchanged."
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "5733f83ccd0b54a7ce62e777bfb7b7e08a148f31c28414155f037db0d465c8b3",
-      "bytes": 2661,
+      "sha256": "9f32d7dc9fb7148b646ad1dccd471d231d1d75bd56932070e64cc1808e829a58",
+      "bytes": 3294,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,15 +74,15 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "dc4ea15c181cf0e4efd2b2049c02a4c7275e3708ebde4f303348ce8358b29706",
-      "bytes": 5486,
+      "sha256": "39bfe8a9f525106a31374317411b03c034f41d33c1da4619fad36bc235b6573d",
+      "bytes": 6804,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
-      "sha256": "9e686d6838ed45f34507b09520e801e7e88332fd4167b1a649657170b2658b20",
-      "bytes": 45564,
-      "inputs": "Actual setup-help dialog from Slicer 5.12.0; rechecked with 0.7.0 (identical pixels to original capture)."
+      "sha256": "e6f6228a3f0e95445955bfa069e1e58e89929688b84421e0cf0511bfc719f5d1",
+      "bytes": 59461,
+      "inputs": "Actual styled setup-help dialog from Slicer 5.12.0 with 0.7.1; blank inputs and no private paths."
     },
     "tests/test_editor.py": {
       "purpose": "Synthetic scope/input/editor compatibility regression tests.",
@@ -104,8 +104,8 @@
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
-      "sha256": "9eabfcbcabbb72fa617ced12c21b12bf5ceed415b81e3a2e5f1128bd621e957d",
-      "bytes": 28773,
+      "sha256": "af623fa8e9fca985a42d7a3cf07661623026915c8c2eec2ef0fc291ee81a131c",
+      "bytes": 30784,
       "inputs": "Registered baseline and standalone changes"
     },
     "arm_hierarchy.py": {
@@ -127,10 +127,10 @@
       "bytes": 4307
     },
     "docs/editor.png": {
-      "purpose": "Privacy-reviewed native 0.7.0 editor controls for the complete README guide.",
+      "purpose": "Privacy-reviewed native 0.7.1 editor controls for the complete README guide.",
       "inputs": "Actual Slicer 5.12.0 design phase before inputs are selected; no private paths or annotations.",
-      "sha256": "63b48ed688968e630fe6cb77e1dc0f052d6554254c0bffd212d0b51dff2e13ae",
-      "bytes": 74988
+      "sha256": "d93034d6e925ab9caa2a2d6bf0b8ee2e8bcceb275a3b4de05a5b8a9a3f3d9693",
+      "bytes": 106712
     }
   },
   "manifest_self": {
@@ -177,7 +177,49 @@
       "acquisition_date_note": "Population template/atlas; no individual acquisition date assigned"
     }
   ],
-  "validation": {
+  "limitations": [
+    "Hierarchy grouping supports the external explicit ARM CSV with uniquely paired CL/CR or SL/SR paths and selected labels present in the L6 volume. Other ontologies/atlases are not automatically supported.",
+    "Technical validation does not establish anatomical boundaries, biological symmetry or human acceptance.",
+    "Native test changes are synthetic and in-memory; no human annotation distributed.",
+    "Full bilateral integer-label NIfTI export/merge is not implemented.",
+    "Project code license not selected; external NMT/ARM terms and citations remain separate.",
+    "Display colors are paired consistently but may repeat for large groups; they are not an anatomical identity map."
+  ],
+  "standalone_baseline": {
+    "commit": "40e117c55ac18eba2bcc07800c9cc101a3ba50c7",
+    "version": "0.6.0 (local/unreleased)",
+    "module_sha256": "5ad1c8fd1a0af91911c10465aed7f184a34ba8c2b49d4e7f7232c4530ae9a78e",
+    "provenance_url": "https://github.com/bylaikaby/ARMins/blob/40e117c55ac18eba2bcc07800c9cc101a3ba50c7/provenance.json",
+    "policy": "Original source mapping and prior published validation remain available at this immutable commit."
+  },
+  "hierarchy_adaptation_references": [
+    {
+      "logical_file": "region_analysis/hierarchy_table.py",
+      "sha256": "3fbcda26b528e610e1bc51dc78c1ec7da795099fc703eef71d06fe925d44b4aa",
+      "use": "Explicit hierarchy-column semantics, not direct vendoring or a runtime dependency."
+    },
+    {
+      "logical_file": "region_analysis/hierarchy.py",
+      "sha256": "55f87d391db0995ff8cfc3f4026b1c1f694f9948cc53f7b1ce770958a50dcdf4",
+      "use": "Explicit hierarchy-column semantics, not direct vendoring or a runtime dependency."
+    },
+    {
+      "logical_file": "BrainRegion.py",
+      "sha256": "d8e37e4f3bc3f0fb1a0d3add89a4a6362ce77aef0f255f8628a66d4c6d4a276c",
+      "use": "Exact node lookup and subtree-collection pattern; separate JSON ontology, network stack and fixed image-index coordinates are not adopted."
+    }
+  ],
+  "external_hierarchy_input": {
+    "filename": "tables_ARM/ARM_key_table.csv",
+    "source": "Official AFNI symmetric NMT v2.1 archive, externally obtained; no table is bundled",
+    "sha256": "f8214369170e2847ad1558295858222308c14ce98c8a91de88d1b40bebf5a39c",
+    "rows": 686,
+    "nodes": 1674,
+    "level_columns": "Level_1..Level_6, corresponding _abbr and _index",
+    "acquisition_date": null,
+    "qc_status": "837 left nodes and paired right selections resolved with equal paired profile hashes; actual label volumes checked in the bounded ACC test"
+  },
+  "baseline_validation_0_7_0": {
     "tested_module_sha256": "bc9afc7333b0a9cafe89330a49c1f8248eb74abc76226b5032adeb900fb5b186",
     "synthetic_tests": {
       "command": "python -m unittest discover -s tests -p \"test_*.py\" -v",
@@ -465,46 +507,47 @@
       "scope": "Read-only all left nodes and paired right selections; no volumes or scene mutation."
     }
   },
-  "limitations": [
-    "Hierarchy grouping supports the external explicit ARM CSV with uniquely paired CL/CR or SL/SR paths and selected labels present in the L6 volume. Other ontologies/atlases are not automatically supported.",
-    "Technical validation does not establish anatomical boundaries, biological symmetry or human acceptance.",
-    "Native test changes are synthetic and in-memory; no human annotation distributed.",
-    "Full bilateral integer-label NIfTI export/merge is not implemented.",
-    "Project code license not selected; external NMT/ARM terms and citations remain separate.",
-    "Display colors are paired consistently but may repeat for large groups; they are not an anatomical identity map."
-  ],
-  "standalone_baseline": {
-    "commit": "40e117c55ac18eba2bcc07800c9cc101a3ba50c7",
-    "version": "0.6.0 (local/unreleased)",
-    "module_sha256": "5ad1c8fd1a0af91911c10465aed7f184a34ba8c2b49d4e7f7232c4530ae9a78e",
-    "provenance_url": "https://github.com/bylaikaby/ARMins/blob/40e117c55ac18eba2bcc07800c9cc101a3ba50c7/provenance.json",
-    "policy": "Original source mapping and prior published validation remain available at this immutable commit."
+  "validation": {
+    "tested_module_sha256": "6590d3d20fe98b240dd45b84ee85fd3d8b62a1f40884411009cf67132fe95a66",
+    "synthetic_tests": {
+      "passed": 49,
+      "failed": 0,
+      "command": "python -m unittest discover -s tests -p test_*.py -q",
+      "python": "3.10.20",
+      "numpy": "1.26.4",
+      "nibabel": "5.4.2"
+    },
+    "native_slicer": {
+      "version": "5.12.0",
+      "design_checks": [
+        "dialog-local VisPa palette and redundant L/R colour-direction cues leave scene and Slicer theme unchanged",
+        "dark inactive text and placeholder; distinct purple region action retains disabled state",
+        "setup help opens without scene changes and exposes official links and copyable install command",
+        "native setup-help Close button accepts the Qt clicked signal and closes the dialog",
+        "actual native dialog contains both mirror controls; screenshot saved"
+      ],
+      "design_visually_reviewed_before_behavior": true,
+      "hierarchy_checks": [
+        "real ARM CSV resolves ACC L3 to five explicit bilateral leaves with stable paired profile identity",
+        "preloaded insula groups and Segment Editor state captured before hierarchy selection",
+        "GUI hierarchy search and pending selection do not mutate MRML scene",
+        "hierarchy GUI load creates both five-leaf groups, keeps scope geometry, and initially focuses the selected left group",
+        "paired right-side selection reuses the same groups and focuses the right working group",
+        "mirror uses the CSV-derived bilateral ID map; tagged helper is excluded from partition, hidden, and preserved",
+        "right-to-left hierarchy mirror round-trips every selected L6 leaf and helper mask",
+        "hierarchy candidate save/reload retains the profile receipt and helper annotation",
+        "native hierarchy mirror button creates a separate candidate and enables candidate saving",
+        "hierarchy mirroring leaves pre-existing insula working groups and Segment Editor references/mask/effect unchanged",
+        "registered template, atlas, and hierarchy CSV hashes are unchanged"
+      ],
+      "status": "passed"
+    },
+    "scope": "GUI-only update; AST comparison confirms all existing non-GUI functions unchanged. Earlier insula, CLI and 837-node audit evidence retained in baseline_validation_0_7_0 with its original tested hashes."
   },
-  "hierarchy_adaptation_references": [
-    {
-      "logical_file": "region_analysis/hierarchy_table.py",
-      "sha256": "3fbcda26b528e610e1bc51dc78c1ec7da795099fc703eef71d06fe925d44b4aa",
-      "use": "Explicit hierarchy-column semantics, not direct vendoring or a runtime dependency."
-    },
-    {
-      "logical_file": "region_analysis/hierarchy.py",
-      "sha256": "55f87d391db0995ff8cfc3f4026b1c1f694f9948cc53f7b1ce770958a50dcdf4",
-      "use": "Explicit hierarchy-column semantics, not direct vendoring or a runtime dependency."
-    },
-    {
-      "logical_file": "BrainRegion.py",
-      "sha256": "d8e37e4f3bc3f0fb1a0d3add89a4a6362ce77aef0f255f8628a66d4c6d4a276c",
-      "use": "Exact node lookup and subtree-collection pattern; separate JSON ontology, network stack and fixed image-index coordinates are not adopted."
-    }
-  ],
-  "external_hierarchy_input": {
-    "filename": "tables_ARM/ARM_key_table.csv",
-    "source": "Official AFNI symmetric NMT v2.1 archive, externally obtained; no table is bundled",
-    "sha256": "f8214369170e2847ad1558295858222308c14ce98c8a91de88d1b40bebf5a39c",
-    "rows": 686,
-    "nodes": 1674,
-    "level_columns": "Level_1..Level_6, corresponding _abbr and _index",
-    "acquisition_date": null,
-    "qc_status": "837 left nodes and paired right selections resolved with equal paired profile hashes; actual label volumes checked in the bounded ACC test"
+  "gui_update": {
+    "baseline_commit": "b81a09c4c872865f1487298695794f4d9e306dec",
+    "reference": "VisPa light GUI palette as design reference only; no copied module or dependency",
+    "changes": "Darker active/inactive text and search placeholder; purple region action; navy/teal sections; explicit teal L/amber R cues; corrected Close signal callback.",
+    "images": "Actual blank-input Slicer 5.12.0 dialogs from the current tested module; private paths and data absent."
   }
 }

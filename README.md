@@ -157,6 +157,11 @@ Last_Level describe label availability, not parent-child paths.
 
 ![ARMins region selection and working-hemisphere controls](docs/editor.png)
 
+The dialog uses dark text, teal section accents and a purple **Use selected region**
+action. Its pale-purple state is disabled. Working-side cues use teal for L and
+amber for R, alongside explicit hemisphere and mirror-direction text.
+
+
 The actual editor before loading: hierarchy controls become available when
 **ARM hierarchy** is selected; **Candidate direction** follows the working side.
 
@@ -401,13 +406,17 @@ existing destinations. A supplied 3-D ARM6 file is returned without duplication.
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-The 0.7.0 snapshot passed **49 distinct synthetic tests**, a read-only pairing
+The 0.7.0 hierarchy snapshot passed **49 distinct synthetic tests**, a read-only pairing
 audit of all **837 left-side hierarchy nodes** and their right counterparts,
 and separate native **Slicer 5.12.0** checks for both the insula and ACC groups.
 The native tests exercise search/pending-selection non-mutation, L/R focus,
 paired group reuse, exact mirroring, preserved earlier groups/editor state,
 hidden helpers, and save/reload. These are technical checks, not anatomical
 validation.
+
+The 0.7.1 GUI update passed the same 49 synthetic tests, five native design/help
+checks and 11 native hierarchy checks after visual review. Its stylesheet is
+local to the ARMins dialogs; atlas and mirror algorithms are unchanged.
 
 The array, editor, NIfTI and CLI tests use synthetic fixtures. Native Slicer
 testing uses explicitly supplied external inputs and a separate testing scene;
