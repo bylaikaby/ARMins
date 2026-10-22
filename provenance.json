@@ -1,0 +1,323 @@
+{
+  "schema": "armins.provenance.v1",
+  "recorded_date": "2026-10-22",
+  "tool_version": "0.6.0 (local/unreleased)",
+  "status": "candidate; no tagged release or anatomical acceptance",
+  "source_mapping": [
+    {
+      "source_logical_filename": "load_scene.py",
+      "source_sha256": "3433d9b806d54099840f75bbcbe89cbf72aada31f3a402bda174f20b16de22b7",
+      "destination": "armins.py",
+      "source_status": "0.5.0 local/unreleased baseline; original preserved"
+    },
+    {
+      "source_logical_filename": "test_insula_scope_loader.py",
+      "source_sha256": "2128d2c301f568df308cdb0371f3ffce5083147ab4907492ca06e8811de8141f",
+      "destination": "tests/test_editor.py",
+      "source_status": "0.5.0 local/unreleased baseline; original preserved"
+    },
+    {
+      "source_logical_filename": "test_insula_mirroring.py",
+      "source_sha256": "7cc3418fa7dee9b447006edf78264b1517d5da89c17d36cc722b07b4362d07e5",
+      "destination": "tests/test_mirroring.py",
+      "source_status": "0.5.0 local/unreleased baseline; original preserved"
+    },
+    {
+      "source_logical_filename": "slicer_insula_mirror_smoke.py",
+      "source_sha256": "b4d827b1934b519c1d012677bb7af01e94e0a116b7857fbf3ec48f07b902f4e3",
+      "destination": "tests/slicer_smoke.py",
+      "source_status": "0.5.0 local/unreleased baseline; original preserved"
+    }
+  ],
+  "files": {
+    "README.md": {
+      "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
+      "sha256": "21a0381cb52f25847441b66fdf9c20401305e78e9eb5a3b1ec9be22756268e2d",
+      "bytes": 9848,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    "armins.py": {
+      "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
+      "sha256": "5ad1c8fd1a0af91911c10465aed7f184a34ba8c2b49d4e7f7232c4530ae9a78e",
+      "bytes": 72083,
+      "inputs": "Registered baseline and standalone changes"
+    },
+    "CHANGELOG.md": {
+      "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
+      "sha256": "34c98e64e340e95a1191794fdf536180f700f1fb713c1e1576fecf685bfe1eda",
+      "bytes": 1501,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    "AGENTS.md": {
+      "purpose": "Public source-maintenance contract without personal configuration.",
+      "sha256": "0788f0dc2b62125834ecf7852e636e0a275a4b4a18f9bdfcccaf91ffc941d327",
+      "bytes": 1336,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    ".gitignore": {
+      "purpose": "Exclude external data, edits, runtime receipts and private configuration.",
+      "sha256": "2f3a850dcf1d7a7fac7660a67b1a089f7827f474dc066f677e7acef889cf2447",
+      "bytes": 352,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    "requirements.txt": {
+      "purpose": "Ordinary-Python CLI and synthetic-test dependencies; Slicer uses bundled NumPy.",
+      "sha256": "efbf5238b408b9564a6319877a834130bfd222b5a2becdfb4ebbfbd08df7cf63",
+      "bytes": 25,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    ".github/workflows/tests.yml": {
+      "purpose": "Synthetic tests on Ubuntu and Windows with Python 3.12.",
+      "sha256": "8e9f5b372f901c809ecab11d180a77de588511cfcca676d0bf5caeea3d5bf6df",
+      "bytes": 453,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    "docs/project_note.md": {
+      "purpose": "Scientific choices, operations journal, current status and priority review guide.",
+      "sha256": "3a44582d484a46e8fcf905bb71822cda610cf673ec977c9f6423eda8c3cf4adb",
+      "bytes": 2753,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    "docs/atlas_setup.png": {
+      "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
+      "sha256": "9e686d6838ed45f34507b09520e801e7e88332fd4167b1a649657170b2658b20",
+      "bytes": 45564,
+      "inputs": "Native design phase, Slicer 5.12.0, armins.py hash recorded below; public help text only"
+    },
+    "tests/test_editor.py": {
+      "purpose": "Synthetic scope/input/editor compatibility regression tests.",
+      "sha256": "f4df44566e867825d59679b61c1a216e5cb0f528572ba09be21230c1a98cf584",
+      "bytes": 12375,
+      "inputs": "Registered baseline and standalone changes"
+    },
+    "tests/test_mirroring.py": {
+      "purpose": "Synthetic reflection, identity, partition and failure-case tests.",
+      "sha256": "1a3cb9ef779cb0ff24dd4993b88007644feeebf8bdbb27a325bf985761279f5b",
+      "bytes": 8388,
+      "inputs": "Registered baseline and standalone changes"
+    },
+    "tests/test_preparation.py": {
+      "purpose": "Synthetic NIfTI/CLI preparation, provenance and non-overwrite tests.",
+      "sha256": "9836b07ab3faeb5f42bd92856ad1f1776cab74ae640acb75231a7245f3997526",
+      "bytes": 11187,
+      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+    },
+    "tests/slicer_smoke.py": {
+      "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
+      "sha256": "27f84d8dc4a01175ddf990abab9108625d3e1ae2feae193e3f2bee83d36c1995",
+      "bytes": 13056,
+      "inputs": "Registered baseline and standalone changes"
+    }
+  },
+  "manifest_self": {
+    "path": "provenance.json",
+    "purpose": "Shared source, output-purpose and validation manifest",
+    "self_hash": "omitted to avoid recursive checksum"
+  },
+  "afni_setup_verification": {
+    "checked_date": "2026-10-22",
+    "archive_url": "https://afni.nimh.nih.gov/pub/dist/atlases/macaque/nmt/NMT_v2.1_sym.tgz",
+    "archive_content_length_bytes": 300000118,
+    "installer_documentation": "https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/programs/alpha/%40Install_NMT_sphx.html",
+    "command": "@Install_NMT -nmt_ver 2.1 -sym sym -install_dir ./atlas-data",
+    "package_readme_sha256": "2d95671d798e11fb01609603cde44efd037b747e0c7f16260e422b09e1f083c7",
+    "method": "Official directory/installer documentation plus bounded archive read of embedded README and filenames; existing matching package used for validation. No atlas data included in repository."
+  },
+  "external_reference_inputs": [
+    {
+      "filename": "NMT_v2.1_sym_SS.nii.gz",
+      "role": "intensity reference",
+      "sha256": "9e37a94c4b9e5865aabb9fd3b51dcc3b2cb16f3daed39c967e68acf16cf92bee",
+      "shape_ijk": [
+        256,
+        312,
+        200
+      ],
+      "space": "NMT v2.1 symmetric, standard brain-focused 0.25 mm",
+      "source": "Official AFNI symmetric archive; separately obtained, not distributed",
+      "acquisition_date": null,
+      "acquisition_date_note": "Population template/atlas; no individual acquisition date assigned"
+    },
+    {
+      "filename": "ARM_6_in_NMT_v2.1_sym.nii.gz",
+      "role": "supplied 3-D level-6 labels",
+      "sha256": "7df7e53df5aa1f142bf017aad89f1fde3c84a87a3e4f93adc7dbded69bc79338",
+      "shape_ijk": [
+        256,
+        312,
+        200
+      ],
+      "space": "NMT v2.1 symmetric, standard brain-focused 0.25 mm",
+      "source": "Official AFNI symmetric archive; separately obtained, not distributed",
+      "acquisition_date": null,
+      "acquisition_date_note": "Population template/atlas; no individual acquisition date assigned"
+    }
+  ],
+  "validation": {
+    "tested_module_sha256": "5ad1c8fd1a0af91911c10465aed7f184a34ba8c2b49d4e7f7232c4530ae9a78e",
+    "synthetic_tests": {
+      "command": "python -m unittest discover -s tests -p \"test_*.py\" -v",
+      "passed": 34,
+      "failed": 0,
+      "python": "3.10.20",
+      "numpy": "1.26.4",
+      "nibabel": "5.4.2"
+    },
+    "native_slicer": {
+      "version": "5.12.0",
+      "python": "3.12.10",
+      "numpy": "2.4.6",
+      "status": "passed",
+      "design_checks": [
+        "setup help opens without scene changes and exposes official links and copyable install command",
+        "actual native dialog contains both mirror controls; screenshot saved"
+      ],
+      "behavior_checks": [
+        "dry run validates actual edited data without changing scene or source masks",
+        "all ARM IDs and custom child mirror exactly across KJI axis 2",
+        "both existing working side nodes remain byte-for-byte equal as arrays",
+        "right-to-left reflection restores every edited source voxel and parcel ID",
+        "saved native .seg.nrrd reloads with every segment and voxel unchanged",
+        "mirror provenance survives .seg.nrrd reload as a scope-segment tag",
+        "arbitrary source annotation metadata survives mirroring and native save/reload",
+        "existing mirror output is refused without overwrite",
+        "native Validate and Mirror button signals create a new candidate and enable saving",
+        "overlap with another seed is rejected before creating any candidate",
+        "registered source image and atlas hashes remain unchanged"
+      ],
+      "reflection": {
+        "plane": "RAS x=0",
+        "ijk_axis": 0,
+        "numpy_axis": 2,
+        "shape_kji": [
+          200,
+          312,
+          256
+        ],
+        "voxel_index_matrix": [
+          [
+            -1,
+            0,
+            0,
+            255
+          ],
+          [
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ]
+        ]
+      },
+      "template_symmetry": {
+        "max_abs_difference": 0.0,
+        "rms_difference": 0.0,
+        "voxels_over_tolerance": 0,
+        "atol": 1e-05
+      },
+      "atlas_symmetry": {
+        "scope_mismatch_voxels": 0,
+        "pairs": [
+          {
+            "left_id": 39,
+            "right_id": 539,
+            "mismatch_voxels": 0
+          },
+          {
+            "left_id": 41,
+            "right_id": 541,
+            "mismatch_voxels": 0
+          },
+          {
+            "left_id": 42,
+            "right_id": 542,
+            "mismatch_voxels": 0
+          },
+          {
+            "left_id": 43,
+            "right_id": 543,
+            "mismatch_voxels": 0
+          },
+          {
+            "left_id": 226,
+            "right_id": 726,
+            "mismatch_voxels": 0
+          },
+          {
+            "left_id": 228,
+            "right_id": 728,
+            "mismatch_voxels": 0
+          },
+          {
+            "left_id": 229,
+            "right_id": 729,
+            "mismatch_voxels": 0
+          },
+          {
+            "left_id": 230,
+            "right_id": 730,
+            "mismatch_voxels": 0
+          }
+        ]
+      },
+      "synthetic_edited_partition": {
+        "scope_voxels": 30256,
+        "parcel_union_voxels": 30256,
+        "gap_voxels": 0,
+        "overlap_voxels": 0,
+        "leak_voxels": 0,
+        "overlap_pairs": []
+      },
+      "candidate_voxel_mismatches": {
+        "R-INS-scope": 0,
+        "ARM_L6_539": 0,
+        "ARM_L6_541": 0,
+        "ARM_L6_542": 0,
+        "ARM_L6_543": 0,
+        "ARM_L6_726": 0,
+        "ARM_L6_728": 0,
+        "ARM_L6_729": 0,
+        "ARM_L6_730": 0,
+        "R-mirror-test-child": 0
+      },
+      "native_candidate_save_reload": {
+        "bytes": 54380,
+        "sha256": "41983aa5dfc57670afd2be331aa4ec2d555936cb6920c255d3b0e516bd8d77cd",
+        "output_distributed": false
+      }
+    },
+    "cli_real_inputs": {
+      "check_status": "validated",
+      "supplied_3D_input_writes": false,
+      "hierarchical_prepare_dryrun_status": "dry-run",
+      "hierarchical_source_shape": [
+        256,
+        312,
+        200,
+        1,
+        6
+      ],
+      "hierarchical_source_sha256": "8f7f1dec9fe6ccd1b6c8fce45e3b2cbc7d542ce4a4256500ee562e7e25ddbac7",
+      "output_directory_created": false
+    },
+    "ci": "Workflow provided; actual run status is available in GitHub Actions for each commit, separate from local validation."
+  },
+  "limitations": [
+    "Technical validation does not establish anatomical boundaries, biological symmetry or human acceptance.",
+    "Native test changes are synthetic and in-memory; no human annotation distributed.",
+    "Full bilateral integer-label NIfTI export/merge is not implemented.",
+    "Project code license not selected; external NMT/ARM terms and citations remain separate."
+  ]
+}

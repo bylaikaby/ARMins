@@ -1,0 +1,1473 @@
+"""Create bilateral full-insula editing scopes and mirror candidates.
+
+Version: 0.6.0 (local/unreleased)
+Last updated: 2026-10-22
+Change history: CHANGELOG.md
+Status: experimental
+
+Derived from an earlier standalone editor baseline. Public changes are recorded
+in the repository CHANGELOG.md; see that file for source mapping and validation.
+"""
+
+from pathlib import Path
+import argparse
+import hashlib
+import json
+import os
+import sys
+from datetime import datetime, timezone
+import numpy as np
+try:
+    import slicer
+except Exception:  # Slicer is optional for CLI preparation and array validation.
+    slicer = None
+
+VERSION = "0.6.0 (local/unreleased)"
+
+
+def _runtime_provenance(nib=None):
+    provenance = {
+        "loader_version": VERSION,
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "processing_timezone": "UTC",
+        "python_version": sys.version.split()[0],
+        "numpy_version": np.__version__,
+    }
+    if nib is not None:
+        provenance["nibabel_version"] = nib.__version__
+    return provenance
+
+
+def _environment_path(name):
+    value = os.environ.get(name)
+    return Path(value).expanduser().resolve() if value else None
+
+
+REF_PATH = _environment_path("ARMINS_TEMPLATE")
+ARM_PATH = _environment_path("ARMINS_ATLAS")
+OUTPUT_DIR = _environment_path("ARMINS_OUTPUT_DIR") or (Path.cwd() / "outputs").resolve()
+ACTIVE_OUTPUT_DIR = OUTPUT_DIR
+T1_NAME, ARM_NAME = "NMT_v2.1_sym_SS", "ARM_L6_in_NMT_v2.1_sym"
+# Public source hashes identify the known NMT reference/ARM-L6 pair regardless of
+# its local install path. Other inputs are handled as an explicit custom pair.
+DEFAULT_TEMPLATE_SHA256 = "9E37A94C4B9E5865AABB9FD3B51DCC3B2CB16F3DAED39C967E68ACF16CF92BEE"
+DEFAULT_ARM_SHA256 = "97DADAB36AED80D20B50919C707166646708109785D79F56CCE6FFD851C7B4FF"
+DEFAULT_ARM_SHA256S = {
+    DEFAULT_ARM_SHA256,
+    "7DF7E53DF5AA1F142BF017AAD89F1FDE3C84A87A3E4F93ADC7DBDED69BC79338",
+}
+DEFAULT_SEG_NAMES = {"L": "ARM_INS_L6_L_working", "R": "ARM_INS_L6_R_working"}
+ACTIVE_SEG_NAMES = dict(DEFAULT_SEG_NAMES)
+ACTIVE_T1_NAME = T1_NAME
+LAST_MIRROR_CANDIDATE = None
+SCOPE_IDS = {"L": "L-INS-Scope", "R": "R-INS-scope"}
+FULL_INS_IDS = {"L": (39, 41, 42, 43, 226, 228, 229, 230),
+                "R": (539, 541, 542, 543, 726, 728, 729, 730)}
+EXPECTED_VOXELS_PER_SIDE = 30256
+SCOPE_COLORS = {"L": (0.10, 0.78, 0.82), "R": (0.95, 0.48, 0.24)}
+ARM_TYPES = (
+    ("Iam/Iapm", 39, (0.58, 0.30, 0.78)),
+    ("Iai", 41, (0.20, 0.42, 0.90)),
+    ("Ial", 42, (0.18, 0.68, 0.36)),
+    ("Iapl", 43, (0.88, 0.72, 0.18)),
+    ("Pi", 226, (0.86, 0.32, 0.58)),
+    ("Ia/Id", 228, (0.48, 0.56, 0.72)),
+    ("Ig", 229, (0.88, 0.25, 0.20)),
+    ("Ri", 230, (0.55, 0.38, 0.22)),
+)
+ARM_SEGMENTS = tuple(
+    (f"C{prefix}_{name}", label_id + offset, side, color)
+    for side, prefix, offset in (("L", "L", 0), ("R", "R", 500))
+    for name, label_id, color in ARM_TYPES
+)
+ARM_SEGMENT_IDS = {f"ARM_L6_{label_id}": side
+                   for _, label_id, side, _ in ARM_SEGMENTS}
+ARM_MIRROR_IDS = {label_id: label_id + 500 for label_id in (39, 41, 42, 43, 226, 228, 229, 230)}
+MIRROR_SYMMETRY_ATOL = 1e-5
+MIRROR_HELPER_TAG = "Insula.MirrorRole"
+
+
+def configure(template_path=None, atlas_path=None, output_dir=None):
+    """Set optional local inputs and output folder without changing scene data."""
+    global REF_PATH, ARM_PATH, OUTPUT_DIR, ACTIVE_OUTPUT_DIR
+    if template_path is not None:
+        REF_PATH = Path(template_path).expanduser().resolve()
+    if atlas_path is not None:
+        ARM_PATH = Path(atlas_path).expanduser().resolve()
+    if output_dir is not None:
+        OUTPUT_DIR = Path(output_dir).expanduser().resolve()
+    ACTIVE_OUTPUT_DIR = OUTPUT_DIR
+    return {"template": str(REF_PATH) if REF_PATH else None,
+            "atlas": str(ARM_PATH) if ARM_PATH else None,
+            "output_dir": str(OUTPUT_DIR)}
+
+
+def _has_slicer_scene():
+    return (slicer is not None and getattr(slicer, "app", None) is not None
+            and getattr(slicer, "mrmlScene", None) is not None)
+
+
+def _require_slicer():
+    """Fail clearly only when a scene or GUI operation actually needs Slicer."""
+    if not _has_slicer_scene():
+        raise RuntimeError("This operation needs the 3D Slicer Python environment")
+    return slicer
+
+
+def reflection_index_mapping(ijk_to_ras, shape_kji, atol=1e-6):
+    """Return the exact voxel flip for reflection across physical RAS x=0.
+
+    Only an axis-aligned grid whose reflected voxel centers map exactly onto
+    integer voxel centers is supported. ``numpy_axis`` indexes KJI arrays.
+    """
+    matrix = np.asarray(ijk_to_ras, dtype=float)
+    if matrix.shape != (4, 4) or not np.isfinite(matrix).all():
+        raise ValueError("IJK-to-RAS geometry must be a finite 4x4 matrix")
+    if len(shape_kji) != 3 or any(int(size) <= 0 for size in shape_kji):
+        raise ValueError("reference volume must have a positive 3-D KJI shape")
+    if abs(np.linalg.det(matrix[:3, :3])) < 1e-12:
+        raise ValueError("IJK-to-RAS geometry is singular")
+    reflection = np.diag([-1.0, 1.0, 1.0, 1.0])
+    voxel_map = np.linalg.inv(matrix) @ reflection @ matrix
+    rounded = np.rint(voxel_map)
+    if not np.allclose(voxel_map, rounded, rtol=0, atol=atol):
+        raise ValueError("RAS x=0 reflection does not map voxel centers to integer indices")
+    linear = rounded[:3, :3].astype(int)
+    translation = rounded[:3, 3].astype(int)
+    diagonal = np.diag(linear)
+    if (not np.array_equal(linear, np.diag(diagonal))
+            or sorted(diagonal.tolist()) != [-1, 1, 1]):
+        raise ValueError("RAS x=0 reflection requires an unsupported oblique or multi-axis grid mapping")
+    ijk_axis = int(np.flatnonzero(diagonal == -1)[0])
+    shape_ijk = tuple(int(n) for n in shape_kji[::-1])
+    expected_translation = np.zeros(3, dtype=int)
+    expected_translation[ijk_axis] = shape_ijk[ijk_axis] - 1
+    if not np.array_equal(translation, expected_translation):
+        raise ValueError("RAS x=0 reflection is shifted relative to the reference voxel grid")
+    expected_map = np.eye(4, dtype=int)
+    expected_map[ijk_axis, ijk_axis] = -1
+    expected_map[ijk_axis, 3] = shape_ijk[ijk_axis] - 1
+    if not np.array_equal(rounded.astype(int), expected_map):
+        raise ValueError("RAS x=0 reflection has an unsupported voxel-index transform")
+    return {
+        "plane": "RAS x=0",
+        "ijk_axis": ijk_axis,
+        "numpy_axis": 2 - ijk_axis,
+        "shape_kji": [int(n) for n in shape_kji],
+        "voxel_index_matrix": expected_map.tolist(),
+    }
+
+
+def reflect_kji_array(array, mapping):
+    """Reflect a full-grid KJI array using the verified integer voxel flip."""
+    values = np.asarray(array)
+    expected = tuple(mapping["shape_kji"])
+    if values.ndim != 3 or values.shape != expected:
+        raise ValueError(f"array must have reference KJI shape {expected}; got {values.shape}")
+    return np.flip(values, axis=int(mapping["numpy_axis"])).copy()
+
+
+def integer_lattice_offset(reference_ijk_to_ras, segment_ijk_to_ras, atol=1e-6):
+    """Resolve a segment image to the reference lattice without interpolation."""
+    reference = np.asarray(reference_ijk_to_ras, dtype=float)
+    segment = np.asarray(segment_ijk_to_ras, dtype=float)
+    if reference.shape != (4, 4) or segment.shape != (4, 4):
+        raise ValueError("reference and segment geometries must be 4x4 matrices")
+    transform = np.linalg.inv(reference) @ segment
+    if not np.allclose(transform[:3, :3], np.eye(3), rtol=0, atol=atol):
+        raise ValueError("segment spacing or orientation differs from the reference lattice")
+    offset = np.rint(transform[:3, 3]).astype(int)
+    if not np.allclose(transform[:3, 3], offset, rtol=0, atol=atol):
+        raise ValueError("segment origin is shifted off the reference voxel lattice")
+    expected = np.eye(4)
+    expected[:3, 3] = offset
+    if not np.allclose(transform, expected, rtol=0, atol=atol):
+        raise ValueError("segment geometry cannot be represented as an integer voxel offset")
+    return offset.tolist()
+
+
+def embed_segment_mask(cropped_kji, extent_ijk, offset_ijk, reference_shape_kji):
+    """Place a cropped segment mask on the reference grid, refusing lost foreground."""
+    cropped = np.asarray(cropped_kji, dtype=bool)
+    reference_shape = tuple(int(size) for size in reference_shape_kji)
+    if cropped.ndim != 3:
+        raise ValueError("cropped segment mask must be three dimensional")
+    extent = tuple(int(v) for v in extent_ijk)
+    if len(extent) != 6 or any(extent[i] > extent[i + 1] for i in (0, 2, 4)):
+        raise ValueError("segment extent must contain valid inclusive IJK bounds")
+    expected_shape = (extent[5] - extent[4] + 1,
+                      extent[3] - extent[2] + 1,
+                      extent[1] - extent[0] + 1)
+    if cropped.shape != expected_shape:
+        raise ValueError(f"cropped mask shape {cropped.shape} disagrees with segment extent {expected_shape}")
+    offset = np.asarray(offset_ijk, dtype=int)
+    if offset.shape != (3,):
+        raise ValueError("integer lattice offset must contain three IJK values")
+    start_ijk = np.asarray([extent[0], extent[2], extent[4]], dtype=int) + offset
+    end_ijk = start_ijk + np.asarray([cropped.shape[2], cropped.shape[1], cropped.shape[0]])
+    ref_ijk_shape = np.asarray(reference_shape[::-1])
+    clipped_start = np.maximum(start_ijk, 0)
+    clipped_end = np.minimum(end_ijk, ref_ijk_shape)
+    output = np.zeros(reference_shape, dtype=bool)
+    foreground = int(cropped.sum())
+    if np.any(clipped_start >= clipped_end):
+        if foreground:
+            raise ValueError(f"segment has {foreground} foreground voxels outside the reference field of view")
+        return output
+    src_start = clipped_start - start_ijk
+    src_end = src_start + (clipped_end - clipped_start)
+    src_slices = (slice(src_start[2], src_end[2]),
+                  slice(src_start[1], src_end[1]),
+                  slice(src_start[0], src_end[0]))
+    dst_slices = (slice(clipped_start[2], clipped_end[2]),
+                  slice(clipped_start[1], clipped_end[1]),
+                  slice(clipped_start[0], clipped_end[0]))
+    output[dst_slices] = cropped[src_slices]
+    retained = int(output.sum())
+    if retained != foreground:
+        raise ValueError(f"reference field of view loses segment foreground: {foreground-retained} of {foreground} voxels")
+    return output
+
+
+def validate_template_symmetry(template, mapping, atol=MIRROR_SYMMETRY_ATOL):
+    """Measure full-volume intensity symmetry and reject values beyond tolerance."""
+    values = np.asarray(template)
+    reflected = reflect_kji_array(values, mapping)
+    if not np.isfinite(values).all():
+        raise ValueError("template contains non-finite intensity values")
+    difference = np.abs(values.astype(np.float64) - reflected.astype(np.float64))
+    max_abs = float(difference.max(initial=0.0))
+    rms = float(np.sqrt(np.mean(np.square(difference))))
+    unequal = int(np.count_nonzero(difference > atol))
+    report = {"max_abs_difference": max_abs, "rms_difference": rms,
+              "voxels_over_tolerance": unequal, "atol": float(atol)}
+    if unequal:
+        raise ValueError(
+            f"template is not symmetric within atol={atol:g}: "
+            f"max_abs={max_abs:g}, rms={rms:g}, voxels_over_tolerance={unequal}")
+    return report
+
+
+def validate_atlas_symmetry(arm_l6, mapping):
+    """Require exact reflected equality for the full insula scopes and 8 ARM pairs."""
+    labels = np.asarray(arm_l6)
+    if labels.ndim != 3 or labels.shape != tuple(mapping["shape_kji"]):
+        raise ValueError("ARM L6 atlas must match the reference 3-D KJI grid")
+    reflected = reflect_kji_array(labels, mapping)
+    pairs = []
+    mismatches = []
+    for left_id, right_id in ARM_MIRROR_IDS.items():
+        mismatch = int(np.count_nonzero((reflected == left_id) != (labels == right_id)))
+        pairs.append({"left_id": left_id, "right_id": right_id, "mismatch_voxels": mismatch})
+        if mismatch:
+            mismatches.append(f"{left_id}->{right_id}:{mismatch}")
+    scope_left = np.isin(reflected, FULL_INS_IDS["L"])
+    scope_right = np.isin(labels, FULL_INS_IDS["R"])
+    scope_mismatch = int(np.count_nonzero(scope_left != scope_right))
+    if scope_mismatch:
+        mismatches.append(f"scope:{scope_mismatch}")
+    if mismatches:
+        raise ValueError("ARM L/R atlas symmetry failed: " + ", ".join(mismatches))
+    return {"scope_mismatch_voxels": scope_mismatch, "pairs": pairs}
+
+
+def validate_partition(scope_mask, parcel_masks):
+    """Require parcels to partition the same-side scope with no gaps, overlaps or leaks."""
+    scope = np.asarray(scope_mask, dtype=bool)
+    if scope.ndim != 3:
+        raise ValueError("scope mask must be a 3-D array")
+    names = list(parcel_masks)
+    if not names:
+        raise ValueError("no parcel segments were supplied for partition validation")
+    masks = []
+    for name in names:
+        mask = np.asarray(parcel_masks[name], dtype=bool)
+        if mask.shape != scope.shape:
+            raise ValueError(f"parcel {name!r} shape {mask.shape} differs from scope {scope.shape}")
+        masks.append(mask)
+    counts = np.sum(np.stack(masks, axis=0), axis=0, dtype=np.uint16)
+    gap_mask = scope & (counts == 0)
+    overlap_mask = scope & (counts > 1)
+    leak_mask = (counts > 0) & ~scope
+    overlaps = []
+    for i, first in enumerate(names):
+        for j in range(i + 1, len(names)):
+            n = int(np.count_nonzero(masks[i] & masks[j]))
+            if n:
+                overlaps.append({"first": first, "second": names[j], "voxels": n})
+    report = {
+        "scope_voxels": int(scope.sum()),
+        "parcel_union_voxels": int(np.count_nonzero(counts > 0)),
+        "gap_voxels": int(gap_mask.sum()),
+        "overlap_voxels": int(overlap_mask.sum()),
+        "leak_voxels": int(leak_mask.sum()),
+        "overlap_pairs": overlaps,
+    }
+    if report["gap_voxels"] or report["overlap_voxels"] or report["leak_voxels"]:
+        raise ValueError(
+            "source parcel partition invalid: "
+            f"gaps={report['gap_voxels']}, overlaps={report['overlap_voxels']} "
+            f"across pairs={overlaps}, leaks={report['leak_voxels']}")
+    return report
+
+
+def mirrored_segment_identity(segment_id, name, side, tags=None):
+    """Resolve a source segment to its explicit opposite-side ID and display name."""
+    side = str(side).upper()
+    if side not in SCOPE_IDS:
+        raise ValueError("side must be L or R")
+    tags = tags or {}
+    other = "R" if side == "L" else "L"
+    if segment_id == SCOPE_IDS[side]:
+        return SCOPE_IDS[other], SCOPE_IDS[other], "scope"
+    if segment_id in SCOPE_IDS.values():
+        raise ValueError(f"wrong-side scope segment {segment_id!r} in {side} source node")
+    if segment_id.startswith("ARM_L6_"):
+        source_label_id = int(segment_id.removeprefix("ARM_L6_"))
+        entry = next((item for item in ARM_SEGMENTS if item[1] == source_label_id), None)
+        if entry is None:
+            raise ValueError(f"unknown ARM segment ID {segment_id!r}; refusing to drop or guess it")
+        expected_name, _, label_side, _ = entry
+        if label_side != side:
+            raise ValueError(f"wrong-side ARM segment {segment_id!r} in {side} source node")
+        if name != expected_name:
+            raise ValueError(f"ARM segment {segment_id!r} has unexpected name {name!r}; expected {expected_name!r}")
+        if tags.get(MIRROR_HELPER_TAG) is not None:
+            raise ValueError(f"official ARM segment {segment_id!r} cannot be tagged as a helper mask")
+        target_id = ARM_MIRROR_IDS.get(source_label_id) if side == "L" else source_label_id - 500
+        target_entry = next((item for item in ARM_SEGMENTS if item[1] == target_id), None)
+        if target_entry is None:
+            raise ValueError(f"no official ARM mirror mapping for {segment_id!r}")
+        return f"ARM_L6_{target_id}", target_entry[0], "parcel"
+    prefix = side + "-"
+    if not segment_id.startswith(prefix) or name != segment_id:
+        wrong_prefix = other + "-"
+        if segment_id.startswith(wrong_prefix) or name.startswith("C" + other + "_"):
+            raise ValueError(f"wrong-side custom segment {segment_id!r}/{name!r} in {side} source node")
+        raise ValueError(f"unmapped segment {segment_id!r}/{name!r}; custom parcels must use {side}-<name>")
+    suffix = segment_id[len(prefix):]
+    if not suffix.strip():
+        raise ValueError(f"custom parcel ID {segment_id!r} has an empty name")
+    if tags.get(MIRROR_HELPER_TAG) not in (None, "helper_mask"):
+        raise ValueError(f"unsupported mirror role {tags[MIRROR_HELPER_TAG]!r} on {segment_id!r}")
+    role = "helper_mask" if tags.get(MIRROR_HELPER_TAG) == "helper_mask" else "parcel"
+    return f"{other}-{suffix}", f"{other}-{suffix}", role
+
+
+def validate_input_arrays(template_array, arm_l6, template_ijk_to_ras, atlas_ijk_to_ras):
+    """Validate one intensity grid and a 3-D integer ARM-L6-compatible atlas."""
+    template = np.asarray(template_array)
+    labels = np.asarray(arm_l6)
+    if template.ndim != 3 or not np.isfinite(template).all():
+        raise ValueError("template must be a finite 3-D intensity volume")
+    if labels.ndim != 3 or not np.issubdtype(labels.dtype, np.integer):
+        raise ValueError("atlas must be a 3-D integer label volume; resample outside this tool")
+    if template.shape != labels.shape:
+        raise ValueError(f"template/atlas array shape mismatch: {template.shape} vs {labels.shape}")
+    required = [label_id for _, label_id, _, _ in ARM_SEGMENTS]
+    counts = {label_id: int(np.count_nonzero(labels == label_id)) for label_id in required}
+    missing = [label_id for label_id, count in counts.items() if count == 0]
+    if missing:
+        raise ValueError(f"atlas is not ARM level-6 compatible; required source IDs are absent: {missing}")
+    template_matrix = np.asarray(template_ijk_to_ras, dtype=float)
+    atlas_matrix = np.asarray(atlas_ijk_to_ras, dtype=float)
+    if (template_matrix.shape != (4, 4) or atlas_matrix.shape != (4, 4)
+            or not np.isfinite(template_matrix).all() or not np.isfinite(atlas_matrix).all()):
+        raise ValueError("template and atlas must have finite 4x4 IJK-to-RAS geometry")
+    if not np.allclose(template_matrix, atlas_matrix, rtol=0, atol=1e-4):
+        raise ValueError("template and atlas IJK-to-RAS geometry differ; regrid/align externally first")
+    return counts
+
+
+def _sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest().upper()
+
+
+def _load_nifti_inputs(template_path, atlas_path, level=6):
+    """Load and validate a template plus 3-D or multi-level ARM NIfTI input."""
+    try:
+        import nibabel as nib
+    except ImportError as exc:
+        raise RuntimeError("Install nibabel to use the command-line NIfTI tools") from exc
+    template_path, atlas_path = Path(template_path).expanduser().resolve(), Path(atlas_path).expanduser().resolve()
+    if not template_path.is_file():
+        raise FileNotFoundError(f"template file not found: {template_path}")
+    if not atlas_path.is_file():
+        raise FileNotFoundError(f"ARM atlas file not found: {atlas_path}")
+    template_image, atlas_image = nib.load(str(template_path)), nib.load(str(atlas_path))
+    template = np.asanyarray(template_image.dataobj)
+    atlas_all_levels = np.asanyarray(atlas_image.dataobj)
+    labels, level_form = extract_arm_level(atlas_all_levels, level=level)
+    counts = validate_input_arrays(template, labels, template_image.affine, atlas_image.affine)
+    return {
+        "nibabel": nib,
+        "template_path": template_path,
+        "atlas_path": atlas_path,
+        "template_image": template_image,
+        "atlas_image": atlas_image,
+        "template": template,
+        "atlas_all_levels": atlas_all_levels,
+        "labels": labels,
+        "level_form": level_form,
+        "counts": counts,
+    }
+
+
+def extract_arm_level(atlas, level=6):
+    """Extract explicit ARM level 6 from a 3-D, 4-D, or original 5-D atlas.
+
+    Accepted layouts are spatial 3-D labels, spatial+(6,) and spatial+(1, 6).
+    All other added axes are ambiguous and rejected.
+    """
+    values = np.asarray(atlas)
+    if level != 6:
+        raise ValueError("this tool currently supports only explicit ARM --level 6")
+    if values.ndim == 3:
+        labels, form = values, "already-3D-level-6"
+    elif values.ndim == 4 and values.shape[-1] == 6:
+        labels, form = values[..., 5], "4D-spatial-plus-six-levels"
+    elif values.ndim == 5 and values.shape[-2:] == (1, 6):
+        labels, form = values[..., 0, 5], "5D-spatial-plus-singleton-and-six-levels"
+    else:
+        raise ValueError(
+            f"ambiguous ARM atlas shape {values.shape}; expected 3-D L6, spatial+(6,), or spatial+(1,6)"
+        )
+    if not np.issubdtype(labels.dtype, np.integer):
+        raise ValueError(f"ARM level-6 atlas must contain integer labels; got {labels.dtype}")
+    return labels, form
+
+
+def _resolved_inputs(template_path=None, atlas_path=None):
+    template = Path(template_path).expanduser().resolve() if template_path else REF_PATH
+    atlas = Path(atlas_path).expanduser().resolve() if atlas_path else ARM_PATH
+    if template is None:
+        raise ValueError("template is not configured; pass --template or set ARMINS_TEMPLATE")
+    if atlas is None:
+        raise ValueError("ARM atlas is not configured; pass --atlas or set ARMINS_ATLAS")
+    return template, atlas
+
+
+def check_inputs(template_path=None, atlas_path=None, level=6):
+    """Read-only validation used by the portable CLI and operator receipt."""
+    template_path, atlas_path = _resolved_inputs(template_path, atlas_path)
+    loaded = _load_nifti_inputs(template_path, atlas_path, level=level)
+    return {
+        **_runtime_provenance(loaded["nibabel"]),
+        "status": "validated",
+        "template_path": str(template_path),
+        "template_sha256": _sha256_file(template_path),
+        "atlas_path": str(atlas_path),
+        "atlas_sha256": _sha256_file(atlas_path),
+        "template_shape": list(loaded["template"].shape),
+        "atlas_source_shape": list(loaded["atlas_all_levels"].shape),
+        "level": int(level),
+        "level6_shape": list(loaded["labels"].shape),
+        "level6_form": loaded["level_form"],
+        "affine": loaded["template_image"].affine.tolist(),
+        "level6_counts": loaded["counts"],
+        "dry_run": True,
+        "writes": [],
+    }
+
+
+def prepare_level6(template_path=None, atlas_path=None, level=6, output_dir=None, dry_run=False):
+    """Extract one ARM L6 NIfTI and a receipt; preserve all input files."""
+    template_path, atlas_path = _resolved_inputs(template_path, atlas_path)
+    loaded = _load_nifti_inputs(template_path, atlas_path, level=level)
+    if loaded["level_form"] == "already-3D-level-6":
+        return {
+            **_runtime_provenance(loaded["nibabel"]),
+            "status": "already-prepared",
+            "template_path": str(template_path),
+            "template_sha256": _sha256_file(template_path),
+            "template_shape": list(loaded["template"].shape),
+            "atlas_path": str(atlas_path),
+            "atlas_sha256": _sha256_file(atlas_path),
+            "atlas_source_shape": list(loaded["atlas_all_levels"].shape),
+            "level": int(level),
+            "level_form": loaded["level_form"],
+            "template_shape": list(loaded["template"].shape),
+            "level6_shape": list(loaded["labels"].shape),
+            "affine": loaded["atlas_image"].affine.tolist(),
+            "level6_counts": loaded["counts"],
+            "output_path": str(atlas_path),
+            "dry_run": False,
+            "writes": [],
+        }
+    destination_dir = (Path(output_dir).expanduser().resolve() if output_dir
+                       else OUTPUT_DIR)
+    output_path = destination_dir / "ARM_L6.nii.gz"
+    receipt_path = destination_dir / "armins_prepare_receipt.json"
+    result = {
+        **_runtime_provenance(loaded["nibabel"]),
+        "status": "dry-run" if dry_run else "prepared",
+        "template_path": str(template_path),
+        "template_sha256": _sha256_file(template_path),
+        "atlas_path": str(atlas_path),
+        "atlas_sha256": _sha256_file(atlas_path),
+        "atlas_source_shape": list(loaded["atlas_all_levels"].shape),
+        "level": 6,
+        "level_form": loaded["level_form"],
+        "template_shape": list(loaded["template"].shape),
+        "level6_shape": list(loaded["labels"].shape),
+        "affine": loaded["atlas_image"].affine.tolist(),
+        "level6_counts": loaded["counts"],
+        "output_path": str(output_path),
+        "receipt_path": str(receipt_path),
+        "dry_run": bool(dry_run),
+        "writes": [] if dry_run else [str(output_path), str(receipt_path)],
+    }
+    if dry_run:
+        return result
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    if output_path.exists() or receipt_path.exists():
+        raise FileExistsError(f"refusing to overwrite {output_path} or {receipt_path}")
+    nib = loaded["nibabel"]
+    header = loaded["atlas_image"].header.copy()
+    header.set_data_shape(loaded["labels"].shape)
+    header.set_data_dtype(loaded["labels"].dtype)
+    output_image = nib.Nifti1Image(loaded["labels"], loaded["atlas_image"].affine, header)
+    qform, qcode = loaded["atlas_image"].get_qform(coded=True)
+    sform, scode = loaded["atlas_image"].get_sform(coded=True)
+    if qform is not None:
+        output_image.set_qform(qform, int(qcode))
+    if sform is not None:
+        output_image.set_sform(sform, int(scode))
+    output_image.header.set_data_dtype(loaded["labels"].dtype)
+    receipt = {
+        **result,
+        "output_sha256": None,
+        "output_bytes": None,
+    }
+    created = []
+    try:
+        for path in (output_path, receipt_path):
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.close(fd)
+            created.append(path)
+        nib.save(output_image, str(output_path))
+        receipt["output_sha256"] = _sha256_file(output_path)
+        receipt["output_bytes"] = output_path.stat().st_size
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    except Exception:
+        for path in created:
+            path.unlink(missing_ok=True)
+        raise
+    return receipt
+
+
+def _input_names(template_path, atlas_path):
+    template_path, atlas_path = Path(template_path).resolve(), Path(atlas_path).resolve()
+    template_hash, atlas_hash = _sha256_file(template_path), _sha256_file(atlas_path)
+    default_pair = (template_hash == DEFAULT_TEMPLATE_SHA256
+                    and atlas_hash in DEFAULT_ARM_SHA256S)
+    signature = hashlib.sha256(
+        f"{template_path}|{template_hash}|{atlas_path}|{atlas_hash}".encode("utf-8")
+    ).hexdigest()[:10]
+    suffix = "" if default_pair else f"_{signature}"
+    template_name = T1_NAME if default_pair else f"NMT_template_{signature}"
+    atlas_name = ARM_NAME if default_pair else f"ARM_L6_{signature}"
+    return {
+        "signature": signature,
+        "template_hash": template_hash,
+        "atlas_hash": atlas_hash,
+        "template_name": template_name,
+        "atlas_name": atlas_name,
+        "segment_names": {side: f"{name}{suffix}" for side, name in DEFAULT_SEG_NAMES.items()},
+        "default_pair": default_pair,
+    }
+
+
+def _node_geometry_matrix(node):
+    import vtk
+    matrix = vtk.vtkMatrix4x4()
+    node.GetIJKToRASMatrix(matrix)
+    return np.asarray([[matrix.GetElement(i, j) for j in range(4)] for i in range(4)])
+
+
+def build_scope_masks(arm_l6):
+    """Return full-insula left/right masks for a Slicer KJI integer array."""
+    labels = np.asarray(arm_l6)
+    if labels.ndim != 3 or not np.issubdtype(labels.dtype, np.integer):
+        raise ValueError("ARM L6 must be a 3-D integer label array")
+    masks = {side: np.isin(labels, ids) for side, ids in FULL_INS_IDS.items()}
+    if np.any(masks["L"] & masks["R"]):
+        raise ValueError("left and right full-insula masks overlap")
+    return masks
+
+
+def build_arm6_masks(arm_l6):
+    """Return the 16 bilateral seed masks keyed by source ARM label ID."""
+    labels = np.asarray(arm_l6)
+    if labels.ndim != 3 or not np.issubdtype(labels.dtype, np.integer):
+        raise ValueError("ARM L6 must be a 3-D integer label array")
+    return {label_id: labels == label_id for _, label_id, _, _ in ARM_SEGMENTS}
+
+
+def seed_arm6_segments(segmentation, arm_l6, source_volume, side):
+    """Add missing seeds for one hemisphere; never replace existing edits."""
+    seed_side = side.upper()
+    if seed_side not in SCOPE_IDS:
+        raise ValueError("side must be L or R")
+    masks = build_arm6_masks(arm_l6)
+    data = segmentation.GetSegmentation()
+    added = []
+    for name, label_id, label_side, color in ARM_SEGMENTS:
+        if label_side != seed_side:
+            continue
+        segment_id = f"ARM_L6_{label_id}"
+        if data.GetSegment(segment_id) is not None:
+            continue
+        for index in range(data.GetNumberOfSegments()):
+            other_id = data.GetNthSegmentID(index)
+            if data.GetSegment(other_id).GetName() == name:
+                raise RuntimeError(f"display name {name!r} already exists as {other_id}; preserving it")
+        data.AddEmptySegment(segment_id, name, color)
+        segment = data.GetSegment(segment_id)
+        segment.SetTag("ARM.SourceLabelID", str(label_id))
+        segment.SetTag("ARM.Hemisphere", label_side)
+        slicer.util.updateSegmentBinaryLabelmapFromArray(
+            masks[label_id].astype(np.uint8), segmentation, segment_id, source_volume)
+        added.append(segment_id)
+    return added
+
+
+def _find(name):
+    return _require_slicer().mrmlScene.GetFirstNodeByName(name)
+
+
+def _load_or_reuse(path, name, loader):
+    node = _find(name)
+    if node:
+        storage = node.GetStorageNode()
+        current = Path(storage.GetFileName()).resolve() if storage and storage.GetFileName() else None
+        if current != path.resolve():
+            raise RuntimeError(f"scene node {name!r} already exists from {current}; resolve it manually")
+        return node
+    result = loader(str(path), properties={"name": name})
+    # Normalize older Slicer APIs or compatible wrappers that return (success, node).
+    if isinstance(result, tuple):
+        if len(result) != 2 or not isinstance(result[0], bool):
+            raise RuntimeError(f"unexpected result loading {path}: {type(result).__name__}")
+        success, result = result
+        if not success or result is None:
+            raise RuntimeError(f"Slicer failed to load {path}")
+    if result is None or not hasattr(result, "GetImageData"):
+        raise RuntimeError(f"Slicer did not return a volume node for {path}")
+    return result
+
+
+def add_parcel(name, side, color=(0.95, 0.75, 0.25)):
+    """Add one empty parcel segment, e.g. add_parcel('candidate', 'L')."""
+    side = side.upper()
+    if side not in SCOPE_IDS or not name.strip() or name.strip().casefold() == "ins-scope":
+        raise ValueError("side must be L/R and name must be a non-scope parcel name")
+    segmentation = _find(ACTIVE_SEG_NAMES[side])
+    if segmentation is None:
+        raise RuntimeError("run this loader first")
+    segment_id = f"{side}-{name.strip()}"
+    if segmentation.GetSegmentation().GetSegment(segment_id):
+        raise RuntimeError(f"segment already exists: {segment_id}")
+    segmentation.GetSegmentation().AddEmptySegment(segment_id, segment_id, color)
+    return segment_id
+
+
+def use_scope(side, target_segment_id=None):
+    """Restrict Segment Editor to one scope; scope segments are hidden during drawing."""
+    if not isinstance(side, str):
+        raise ValueError("side must be L or R")
+    side = side.upper()
+    if side not in SCOPE_IDS:
+        raise ValueError("side must be L or R")
+    segmentation = _find(ACTIVE_SEG_NAMES[side])
+    if segmentation is None:
+        raise RuntimeError("run this loader first")
+    segmentation_data = segmentation.GetSegmentation()
+    scope_id = SCOPE_IDS[side]
+    if segmentation_data.GetSegment(scope_id) is None:
+        raise RuntimeError(f"scope segment missing: {scope_id}")
+    resolved_target = None
+    if target_segment_id:
+        target_segment_id = str(target_segment_id).strip()
+        ids = [segmentation_data.GetNthSegmentID(i)
+               for i in range(segmentation_data.GetNumberOfSegments())]
+        matches = [sid for sid in ids
+                   if sid == target_segment_id
+                   or segmentation_data.GetSegment(sid).GetName() == target_segment_id]
+        if len(matches) != 1:
+            raise ValueError(f"target {target_segment_id!r} is not one unique existing segment ID/name")
+        resolved_target = matches[0]
+        target_side = ARM_SEGMENT_IDS.get(resolved_target)
+        if target_side is None and resolved_target.startswith(("L-", "R-")):
+            target_side = resolved_target[0]
+        if resolved_target in SCOPE_IDS.values() or target_side != side:
+            raise ValueError(f"target must be an existing {side}- parcel, never a scope")
+
+    slicer.util.selectModule("SegmentEditor")
+    editor = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+    editor.setSegmentationNode(segmentation)
+    editor.setSourceVolumeNode(_find(ACTIVE_T1_NAME))
+    parameters = editor.mrmlSegmentEditorNode()
+    modify_state = parameters.StartModify()
+    try:
+        parameters.SetMaskSegmentID(scope_id)
+        parameters.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedInsideSingleSegment)
+        parameters.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteVisibleSegments)
+        parameters.SetSelectedSegmentID(resolved_target or "")
+        parameters.SetActiveEffectName("")
+    finally:
+        parameters.EndModify(modify_state)
+    if (parameters.GetMaskSegmentID() != scope_id
+            or parameters.GetMaskMode() != slicer.vtkMRMLSegmentationNode.EditAllowedInsideSingleSegment):
+        raise RuntimeError("Segment Editor did not retain the requested mask; verify Editable area in the UI")
+    segmentation.GetDisplayNode().SetSegmentVisibility(scope_id, False)
+    return (f"Mask applied: mode={parameters.GetMaskMode()}, segment={parameters.GetMaskSegmentID()}; "
+            f"target={resolved_target or 'none'}; no effect active")
+
+
+def _bind_segmentation_source(segmentation, node_name, template_path, atlas_path, source_info,
+                              new_node=False):
+    expected = {
+        "Insula.SourceSignature": source_info["signature"],
+        "Insula.TemplatePath": str(Path(template_path).resolve()),
+        "Insula.TemplateSHA256": source_info["template_hash"],
+        "Insula.ARMAtlasPath": str(Path(atlas_path).resolve()),
+        "Insula.ARMAtlasSHA256": source_info["atlas_hash"],
+    }
+    signature = segmentation.GetAttribute("Insula.SourceSignature")
+    if signature and signature != source_info["signature"]:
+        raise RuntimeError(f"{node_name} is bound to different inputs; preserve it and choose another source pair")
+    if not signature and not source_info["default_pair"] and not new_node:
+        raise RuntimeError(f"{node_name} has no input binding; custom inputs will not reuse it")
+    for key, value in expected.items():
+        old = segmentation.GetAttribute(key)
+        if old and old != value:
+            raise RuntimeError(f"{node_name} has conflicting {key}; existing node was preserved")
+    for key, value in expected.items():
+        segmentation.SetAttribute(key, value)
+
+
+def _segment_tags(segment):
+    """Read only tags needed for validation; candidate copies retain all metadata."""
+    import vtk
+    result = {}
+    for key in ("ARM.SourceLabelID", "ARM.Hemisphere", MIRROR_HELPER_TAG):
+        value = vtk.mutable("")
+        if segment.GetTag(key, value):
+            result[key] = str(value)
+    return result
+
+
+def _resolve_mirror_source(side, source_node=None):
+    if not isinstance(side, str) or side.upper() not in SCOPE_IDS:
+        raise ValueError("side must be L or R")
+    side = side.upper()
+    if source_node is None:
+        name = ACTIVE_SEG_NAMES.get(side, DEFAULT_SEG_NAMES[side])
+        node = _find(name)
+    elif isinstance(source_node, str):
+        node = _find(source_node)
+    else:
+        node = source_node
+    if node is None or not node.IsA("vtkMRMLSegmentationNode"):
+        raise ValueError("source_node must be a loaded segmentation node or its scene name")
+    return side, node
+
+
+def _candidate_name_available(scene, base_name):
+    """Choose a unique name without mutating/reserving a name during dry-run."""
+    name = base_name
+    suffix = 1
+    while scene.GetFirstNodeByName(name) is not None:
+        name = f"{base_name}_{suffix}"
+        suffix += 1
+    return name
+
+
+def _segment_mask_on_reference_grid(segmentation, segment_id, reference_volume, reference_matrix, shape_kji):
+    """Read native segment voxels, check their lattice, and embed by integer offset."""
+    import vtk
+    from vtk.util.numpy_support import vtk_to_numpy
+    image = slicer.vtkOrientedImageData()
+    segmentation.GetBinaryLabelmapRepresentation(segment_id, image)
+    scalars = image.GetPointData().GetScalars()
+    if scalars is None:
+        return np.zeros(shape_kji, dtype=bool)
+    if scalars.GetNumberOfComponents() != 1:
+        raise ValueError(f"segment {segment_id!r} binary labelmap is not scalar")
+    extent = tuple(int(v) for v in image.GetExtent())
+    if len(extent) != 6 or any(extent[i] > extent[i + 1] for i in (0, 2, 4)):
+        if int(scalars.GetNumberOfTuples()) == 0:
+            return np.zeros(shape_kji, dtype=bool)
+        raise ValueError(f"segment {segment_id!r} has invalid native image extent {extent}")
+    segment_matrix_vtk = vtk.vtkMatrix4x4()
+    image.GetImageToWorldMatrix(segment_matrix_vtk)
+    segment_matrix = np.asarray([[segment_matrix_vtk.GetElement(i, j) for j in range(4)]
+                                 for i in range(4)], dtype=float)
+    offset = integer_lattice_offset(reference_matrix, segment_matrix)
+    array = vtk_to_numpy(scalars)
+    expected = (extent[5] - extent[4] + 1,
+                extent[3] - extent[2] + 1,
+                extent[1] - extent[0] + 1)
+    if array.size != int(np.prod(expected)):
+        raise ValueError(f"segment {segment_id!r} scalar count does not match native extent")
+    cropped = array.reshape(expected).astype(bool)
+    full = embed_segment_mask(cropped, extent, offset, shape_kji)
+    if int(full.sum()) != int(cropped.sum()):
+        raise ValueError(f"segment {segment_id!r} foreground count changed on the reference grid")
+    return full
+
+
+def _mirror_preflight(side, source_node=None):
+    """Validate all inputs and edited masks before creating any candidate node."""
+    side, source = _resolve_mirror_source(side, source_node)
+    source_id = source.GetID()
+    if source.GetParentTransformNode():
+        raise ValueError("source segmentation has a parent transform; harden it before mirroring")
+    template_path = source.GetAttribute("Insula.TemplatePath")
+    template_hash = source.GetAttribute("Insula.TemplateSHA256")
+    atlas_path = source.GetAttribute("Insula.ARMAtlasPath")
+    atlas_hash = source.GetAttribute("Insula.ARMAtlasSHA256")
+    signature = source.GetAttribute("Insula.SourceSignature")
+    if not all((template_path, template_hash, atlas_path, atlas_hash, signature)):
+        raise ValueError("source segmentation is missing its template/ARM input binding")
+    for path, expected, label in ((template_path, template_hash, "template"),
+                                  (atlas_path, atlas_hash, "ARM atlas")):
+        if not Path(path).is_file():
+            raise FileNotFoundError(f"bound {label} file is missing: {path}")
+        actual = _sha256_file(path)
+        if actual != expected.upper():
+            raise ValueError(f"bound {label} hash changed: expected {expected}, found {actual}")
+    source_info = _input_names(template_path, atlas_path)
+    if source_info["signature"] != signature:
+        raise ValueError("source segmentation binding signature does not match its input paths and hashes")
+    if source.GetAttribute("Insula.TemplatePath") != str(Path(template_path).resolve()):
+        raise ValueError("source template path binding is not normalized")
+    if source.GetAttribute("Insula.ARMAtlasPath") != str(Path(atlas_path).resolve()):
+        raise ValueError("source ARM atlas path binding is not normalized")
+
+    ref = _find(source_info["template_name"])
+    arm = _find(source_info["atlas_name"])
+    if ref is None or arm is None:
+        raise ValueError("bound template and ARM atlas must already be loaded in the current Slicer scene")
+    for node, path, label in ((ref, template_path, "template"), (arm, atlas_path, "ARM atlas")):
+        storage = node.GetStorageNode()
+        actual_path = Path(storage.GetFileName()).resolve() if storage and storage.GetFileName() else None
+        if actual_path != Path(path).resolve():
+            raise ValueError(f"loaded {label} node is not bound to the source segmentation's input path")
+        if node.GetParentTransformNode():
+            raise ValueError(f"loaded {label} has a parent transform; harden it before mirroring")
+    template = slicer.util.arrayFromVolume(ref)
+    atlas = slicer.util.arrayFromVolume(arm)
+    if template.shape != atlas.shape:
+        raise ValueError(f"template/atlas KJI shape mismatch: {template.shape} vs {atlas.shape}")
+    ref_matrix = _node_geometry_matrix(ref)
+    atlas_matrix = _node_geometry_matrix(arm)
+    if not np.allclose(ref_matrix, atlas_matrix, rtol=0, atol=1e-4):
+        raise ValueError("loaded template and ARM atlas IJK-to-RAS geometry differ")
+    mapping = reflection_index_mapping(ref_matrix, template.shape)
+    template_report = validate_template_symmetry(template, mapping)
+    atlas_report = validate_atlas_symmetry(atlas, mapping)
+
+    scope_id = SCOPE_IDS[side]
+    data = source.GetSegmentation()
+    if data.GetSegment(scope_id) is None:
+        raise ValueError(f"source segmentation is missing its {side} full-insula scope {scope_id}")
+    if data.GetSegment(SCOPE_IDS["R" if side == "L" else "L"]) is not None:
+        raise ValueError("source segmentation contains both hemispheric scopes; refusing ambiguous mirroring")
+    expected_scope = np.isin(atlas, FULL_INS_IDS[side])
+    scope_mask = _segment_mask_on_reference_grid(source, scope_id, ref, ref_matrix, template.shape)
+    if not np.array_equal(scope_mask, expected_scope):
+        raise ValueError("source full-insula scope differs from the bound ARM atlas on the reference grid")
+
+    source_segments = []
+    parcel_masks = {}
+    seen_arm_ids = set()
+    for index in range(data.GetNumberOfSegments()):
+        segment_id = data.GetNthSegmentID(index)
+        segment = data.GetSegment(segment_id)
+        name = segment.GetName()
+        tags = _segment_tags(segment)
+        target_id, target_name, role = mirrored_segment_identity(segment_id, name, side, tags)
+        if role == "scope":
+            continue
+        if segment_id.startswith("ARM_L6_"):
+            label_id = int(segment_id.removeprefix("ARM_L6_"))
+            if tags.get("ARM.SourceLabelID") != str(label_id) or tags.get("ARM.Hemisphere") != side:
+                raise ValueError(f"ARM seed {segment_id!r} has inconsistent source-ID/hemisphere tags")
+            seen_arm_ids.add(label_id)
+        mask = _segment_mask_on_reference_grid(source, segment_id, ref, ref_matrix, template.shape)
+        source_segments.append({
+            "source_id": segment_id,
+            "source_name": name,
+            "target_id": target_id,
+            "target_name": target_name,
+            "role": role,
+            "color": list(segment.GetColor()),
+            "tags": tags,
+            "mask": mask,
+            "voxels": int(mask.sum()),
+        })
+        if role == "parcel":
+            parcel_masks[segment_id] = mask
+    required_ids = {label_id for _, label_id, label_side, _ in ARM_SEGMENTS if label_side == side}
+    if seen_arm_ids != required_ids:
+        raise ValueError(f"source ARM seed IDs incomplete: missing={sorted(required_ids-seen_arm_ids)}, "
+                         f"unexpected={sorted(seen_arm_ids-required_ids)}")
+    partition = validate_partition(scope_mask, parcel_masks)
+    segment_mapping = [{k: item[k] for k in ("source_id", "source_name", "target_id", "target_name", "role", "voxels")}
+                       for item in source_segments]
+    target_side = "R" if side == "L" else "L"
+    base_name = f"ARM_INS_L6_{target_side}_MIRROR_FROM_{side}_candidate"
+    candidate_name = _candidate_name_available(slicer.mrmlScene, base_name)
+    receipt = {
+        "status": "candidate",
+        **_runtime_provenance(),
+        "slicer_version": str(getattr(slicer.app, "applicationVersion", "unknown")),
+        "numpy_version": str(np.__version__),
+        "source_side": side,
+        "target_side": target_side,
+        "source_node_id": source_id,
+        "source_node_name": source.GetName(),
+        "source_signature": signature,
+        "template_path": str(Path(template_path).resolve()),
+        "template_sha256": template_hash.upper(),
+        "atlas_path": str(Path(atlas_path).resolve()),
+        "atlas_sha256": atlas_hash.upper(),
+        "reflection": {**mapping, "plane": "RAS x=0"},
+        "template_symmetry": template_report,
+        "atlas_symmetry": atlas_report,
+        "partition": partition,
+        "segments": segment_mapping,
+        "candidate_name": candidate_name,
+    }
+    return source, ref, source_segments, receipt
+
+
+def mirror_side(side, source_node=None, dry_run=False):
+    """Create an opposite-side mirrored candidate after complete read-only preflight.
+
+    ``source_node`` accepts a loaded segmentation MRML node or scene name. With
+    no value, the currently loaded working segmentation for ``side`` is used.
+    A dry run returns the resolved preflight receipt without changing the scene.
+    """
+    _require_slicer()
+    side, _ = _resolve_mirror_source(side, source_node)
+    source, ref, source_segments, receipt = _mirror_preflight(side, source_node)
+    if dry_run:
+        return {**receipt, "dry_run": True}
+    target_side = receipt["target_side"]
+    reflected = reflection_index_mapping(_node_geometry_matrix(ref), slicer.util.arrayFromVolume(ref).shape)
+    candidate = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", receipt["candidate_name"])
+    try:
+        candidate.SetReferenceImageGeometryParameterFromVolumeNode(ref)
+        candidate.CreateDefaultDisplayNodes()
+        target_scope_id = SCOPE_IDS[target_side]
+        candidate_data = candidate.GetSegmentation()
+        candidate_data.AddEmptySegment(target_scope_id, target_scope_id, SCOPE_COLORS[target_side])
+        scope_segment = candidate_data.GetSegment(target_scope_id)
+        scope_label_value = scope_segment.GetLabelValue()
+        scope_segment.DeepCopyMetadata(source.GetSegmentation().GetSegment(SCOPE_IDS[side]))
+        scope_segment.SetLabelValue(scope_label_value)
+        scope_segment.SetName(target_scope_id)
+        scope_segment.SetColor(*SCOPE_COLORS[target_side])
+        scope_segment.SetTag("Insula.MirrorReceipt", json.dumps(receipt, sort_keys=True))
+        scope_segment.SetTag("Insula.MirrorSourceNodeID", source.GetID())
+        scope_segment.SetTag("Insula.MirrorDirection", f"{side}-to-{target_side}")
+        scope_segment.SetTag("Insula.CandidateStatus", "candidate")
+        scope_item = _segment_mask_on_reference_grid(
+            source, SCOPE_IDS[side], ref, _node_geometry_matrix(ref), tuple(slicer.util.arrayFromVolume(ref).shape))
+        slicer.util.updateSegmentBinaryLabelmapFromArray(
+            reflect_kji_array(scope_item, reflected).astype(np.uint8), candidate, target_scope_id, ref)
+        candidate.GetDisplayNode().SetSegmentVisibility(target_scope_id, False)
+        for item in source_segments:
+            segment_id = item["target_id"]
+            candidate_data.AddEmptySegment(segment_id, item["target_name"], item["color"])
+            segment = candidate_data.GetSegment(segment_id)
+            label_value = segment.GetLabelValue()
+            segment.DeepCopyMetadata(source.GetSegmentation().GetSegment(item["source_id"]))
+            segment.SetLabelValue(label_value)
+            segment.SetName(item["target_name"])
+            segment.SetColor(*item["color"])
+            source_label_id = None
+            if item["source_id"].startswith("ARM_L6_"):
+                source_id = int(item["source_id"].removeprefix("ARM_L6_"))
+                source_label_id = ARM_MIRROR_IDS[source_id] if side == "L" else source_id - 500
+                segment.SetTag("ARM.SourceLabelID", str(source_label_id))
+                segment.SetTag("ARM.Hemisphere", target_side)
+            elif item["role"] == "helper_mask":
+                segment.SetTag(MIRROR_HELPER_TAG, "helper_mask")
+            segment.SetTag("Insula.MirrorSourceNodeID", source.GetID())
+            segment.SetTag("Insula.SourceSignature", receipt["source_signature"])
+            segment.SetTag("Insula.TemplateSHA256", receipt["template_sha256"])
+            segment.SetTag("Insula.ARMAtlasSHA256", receipt["atlas_sha256"])
+            segment.SetTag("Insula.MirrorDirection", f"{side}-to-{target_side}")
+            segment.SetTag("Insula.CandidateStatus", "candidate")
+            slicer.util.updateSegmentBinaryLabelmapFromArray(
+                reflect_kji_array(item["mask"], reflected).astype(np.uint8), candidate, segment_id, ref)
+            if item["role"] == "helper_mask":
+                candidate.GetDisplayNode().SetSegmentVisibility(segment_id, False)
+        node_attrs = ("Insula.SourceSignature", "Insula.TemplatePath", "Insula.TemplateSHA256",
+                      "Insula.ARMAtlasPath", "Insula.ARMAtlasSHA256")
+        for key in node_attrs:
+            candidate.SetAttribute(key, source.GetAttribute(key))
+        candidate.SetAttribute("Insula.CandidateStatus", "candidate")
+        candidate.SetAttribute("Insula.MirrorSourceNodeID", source.GetID())
+        candidate.SetAttribute("Insula.MirrorReceipt", json.dumps(receipt, sort_keys=True))
+        candidate.SetAttribute("Insula.MirrorDirection", f"{side}-to-{target_side}")
+        return candidate
+    except Exception:
+        slicer.mrmlScene.RemoveNode(candidate)
+        raise
+
+
+def save_mirrored_candidate(node, path):
+    """Save a mirror candidate to a new path; refuse all existing destinations."""
+    _require_slicer()
+    if node is None or not node.IsA("vtkMRMLSegmentationNode"):
+        raise ValueError("node must be a mirrored candidate segmentation")
+    receipt_text = node.GetAttribute("Insula.MirrorReceipt")
+    if not receipt_text or not node.GetAttribute("Insula.MirrorSourceNodeID"):
+        raise ValueError("node is not a mirrored candidate created by mirror_side")
+    target = Path(path).expanduser().resolve()
+    if target.exists():
+        raise FileExistsError(f"refusing to overwrite existing mirror candidate: {target}")
+    if not target.name.lower().endswith(".seg.nrrd"):
+        raise ValueError("mirrored candidates must be saved with a .seg.nrrd extension")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not slicer.util.saveNode(node, str(target)):
+        raise RuntimeError(f"Slicer failed to save mirrored candidate: {target}")
+    digest = _sha256_file(target)
+    receipt = json.loads(receipt_text)
+    receipt.update({"saved_path": str(target), "saved_bytes": target.stat().st_size,
+                    "saved_sha256": digest})
+    return receipt
+
+
+def run(dry_run=False, refresh_scopes=False, template_path=None, atlas_path=None, output_dir=None):
+    global ACTIVE_SEG_NAMES, ACTIVE_T1_NAME, ACTIVE_OUTPUT_DIR
+    template_path, atlas_path = _resolved_inputs(template_path, atlas_path)
+    ACTIVE_OUTPUT_DIR = (Path(output_dir).expanduser().resolve() if output_dir
+                         else OUTPUT_DIR)
+    for path in (template_path, atlas_path):
+        if not path.is_file():
+            raise FileNotFoundError(path)
+    source_info = _input_names(template_path, atlas_path)
+    print(f"Template      : {template_path}")
+    print(f"ARM L6 atlas  : {atlas_path} (all 16 ARM L6 IDs required)")
+    print(f"scope IDs     : {FULL_INS_IDS}")
+    print(f"scene nodes   : {source_info['segment_names']}")
+    print(f"output folder : {ACTIVE_OUTPUT_DIR}")
+    if dry_run:
+        print("dry run: resolved input paths and target node names only; scene unchanged")
+        return
+
+    _require_slicer()
+    ref = _load_or_reuse(template_path, source_info["template_name"], slicer.util.loadVolume)
+    arm = _load_or_reuse(atlas_path, source_info["atlas_name"], slicer.util.loadLabelVolume)
+    if ref.GetParentTransformNode() or arm.GetParentTransformNode():
+        raise ValueError("template and atlas must have no parent transform; harden/align them before loading")
+    template_array = slicer.util.arrayFromVolume(ref)
+    arm_l6 = slicer.util.arrayFromVolume(arm)
+    label_counts = validate_input_arrays(
+        template_array, arm_l6, _node_geometry_matrix(ref), _node_geometry_matrix(arm))
+    masks = build_scope_masks(arm_l6)
+    for side, mask in masks.items():
+        count = int(mask.sum())
+        if count == 0 or (source_info["default_pair"] and count != EXPECTED_VOXELS_PER_SIDE):
+            raise RuntimeError(f"{side} full-insula count {count}, expected {EXPECTED_VOXELS_PER_SIDE}")
+
+    # Preflight existing nodes before adding or changing either hemisphere.
+    for side, node_name in source_info["segment_names"].items():
+        existing = _find(node_name)
+        if existing is not None:
+            signature = existing.GetAttribute("Insula.SourceSignature")
+            if signature and signature != source_info["signature"]:
+                raise RuntimeError(f"{node_name} is already bound to different source files")
+            if not signature and not source_info["default_pair"]:
+                raise RuntimeError(f"{node_name} is unbound; custom inputs will not reuse it")
+
+    ACTIVE_SEG_NAMES = dict(source_info["segment_names"])
+    ACTIVE_T1_NAME = source_info["template_name"]
+    segmentations = {}
+    for side, scope_id in SCOPE_IDS.items():
+        node_name = ACTIVE_SEG_NAMES[side]
+        segmentation = _find(node_name)
+        new_node = segmentation is None
+        if new_node:
+            segmentation = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", node_name)
+            segmentation.SetReferenceImageGeometryParameterFromVolumeNode(ref)
+            segmentation.CreateDefaultDisplayNodes()
+        _bind_segmentation_source(segmentation, node_name, template_path, atlas_path,
+                                  source_info, new_node=new_node)
+        data = segmentation.GetSegmentation()
+        segment = data.GetSegment(scope_id)
+        if segment is None:
+            data.AddEmptySegment(scope_id, scope_id, SCOPE_COLORS[side])
+            slicer.util.updateSegmentBinaryLabelmapFromArray(
+                masks[side].astype(np.uint8), segmentation, scope_id, arm)
+        else:
+            current = slicer.util.arrayFromSegmentBinaryLabelmap(segmentation, scope_id, arm).astype(bool)
+            if not np.array_equal(current, masks[side]):
+                if not refresh_scopes:
+                    raise RuntimeError(f"{scope_id} differs from source and was preserved; save edits, then rerun with refresh_scopes=True")
+                slicer.util.updateSegmentBinaryLabelmapFromArray(
+                    masks[side].astype(np.uint8), segmentation, scope_id, arm)
+        data.GetSegment(scope_id).SetColor(*SCOPE_COLORS[side])
+        segmentation.GetDisplayNode().SetSegmentVisibility(scope_id, True)
+        seeded = seed_arm6_segments(segmentation, arm_l6, arm, side)
+        segmentations[side] = segmentation
+        side_counts = {name: label_counts[label_id] for name, label_id, label_side, _ in ARM_SEGMENTS
+                       if label_side == side}
+        print(f"{node_name}: {scope_id}={int(masks[side].sum())} voxels; seeds={side_counts}; added={len(seeded)}")
+
+    slicer.util.setSliceViewerLayers(background=ref, label=arm, labelOpacity=0.35)
+    ref.GetDisplayNode().AutoWindowLevelOn()
+    slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
+    slicer.modules.markups.logic().JumpSlicesToLocation(-18.0, 18.5, 14.9, True)
+    slicer.util.selectModule("SegmentEditor")
+    editor = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+    editor.setSegmentationNode(segmentations["L"])
+    editor.setSourceVolumeNode(ref)
+    editor.mrmlSegmentEditorNode().SetSelectedSegmentID("")
+    editor.mrmlSegmentEditorNode().SetActiveEffectName("")
+    print("Ready: separate left/right scope+ARM L6 nodes are available.")
+    print("Example: print(use_scope('L', 'CL_Ia/Id'))  # or 'ARM_L6_228'; R uses CR_/right IDs")
+    print("Previous combined nodes are left unchanged; manual edits are not migrated.")
+    print("ARM.SourceLabelID tags record source IDs; they do not guarantee exported NIfTI values.")
+    return segmentations
+
+
+NMT_INSTALL_URL = "https://afni.nimh.nih.gov/pub/dist/doc/htmldoc/programs/alpha/@Install_NMT_sphx.html"
+NMT_ARCHIVE_URL = "https://afni.nimh.nih.gov/pub/dist/atlases/macaque/nmt/NMT_v2.1_sym.tgz"
+ARMINS_ATLAS_SETUP_URL = "https://github.com/bylaikaby/ARMins#atlas-setup"
+NMT_INSTALL_COMMAND = "@Install_NMT -nmt_ver 2.1 -sym sym -install_dir ./atlas-data"
+
+
+def show_atlas_setup_help(parent=None):
+    """Open a user-invoked help dialog with official links and a copyable command."""
+    _require_slicer()
+    import qt
+
+    help_dialog = qt.QDialog(parent or slicer.util.mainWindow())
+    help_dialog.setObjectName("NMTAtlasSetupHelpDialog")
+    help_dialog.setWindowTitle("Set up NMT v2.1 symmetric atlas")
+    help_dialog.setMinimumWidth(560)
+    layout = qt.QVBoxLayout(help_dialog)
+    guidance = qt.QLabel(
+        "<b>Atlas setup</b><br>"
+        "1. Obtain the <b>NMT v2.1 symmetric</b> release. These links open only "
+        "when clicked; ARMins never downloads files automatically.<br>"
+        f"<a href=\"{NMT_ARCHIVE_URL}\">Download the official NMT_v2.1_sym archive</a><br>"
+        f"<a href=\"{NMT_INSTALL_URL}\">Read AFNI @Install_NMT instructions</a><br>"
+        f"<a href=\"{ARMINS_ATLAS_SETUP_URL}\">Open ARMins atlas setup guide</a><br><br>"
+        "The archive download works directly. The optional install command below "
+        "uses AFNI @Install_NMT on Linux, macOS, or WSL and creates a new "
+        "<code>./atlas-data</code> folder; choose a fresh folder outside the ARMins repository.<br><br>"
+        "2. Extract the archive outside the ARMins repository. Select "
+        "<code>NMT_v2.1_sym_SS.nii.gz</code> as the intensity template and the "
+        "ready-to-use <code>supplemental_ARM/ARM_6_in_NMT_v2.1_sym.nii.gz</code> "
+        "as the 3-D ARM L6 atlas.<br>"
+        "3. The hierarchical <code>ARM_in_NMT_v2.1_sym.nii.gz</code> is also "
+        "available; optionally use <code>prepare --level 6</code> to extract its "
+        "L6 volume. The template is used by reference and is not copied.", help_dialog)
+    guidance.setObjectName("NMTAtlasSetupGuidance")
+    guidance.setTextFormat(qt.Qt.RichText)
+    guidance.setOpenExternalLinks(True)
+    guidance.setWordWrap(True)
+    layout.addWidget(guidance)
+    command = qt.QLineEdit(NMT_INSTALL_COMMAND, help_dialog)
+    command.setObjectName("NMTInstallCommand")
+    command.setReadOnly(True)
+    layout.addWidget(command)
+    buttons = qt.QHBoxLayout()
+    copy_button = qt.QPushButton("Copy install command", help_dialog)
+    copy_button.setObjectName("CopyNMTInstallCommandButton")
+    close_button = qt.QPushButton("Close", help_dialog)
+    buttons.addWidget(copy_button)
+    buttons.addStretch(1)
+    buttons.addWidget(close_button)
+    layout.addLayout(buttons)
+    copy_button.clicked.connect(lambda: slicer.app.clipboard().setText(NMT_INSTALL_COMMAND))
+    close_button.clicked.connect(help_dialog.close)
+    help_dialog.show()
+    return help_dialog
+
+
+def show_gui():
+    """Show the small input/side/parcel workflow inside 3D Slicer."""
+    global INSULA_GUI
+    _require_slicer()
+    import qt
+
+    if "INSULA_GUI" in globals():
+        try:
+            INSULA_GUI.close()
+        except Exception:
+            pass
+
+    dialog = qt.QDialog(slicer.util.mainWindow())
+    dialog.setObjectName("InsulaAtlasEditorDialog")
+    dialog.setWindowTitle("Insula atlas editor")
+    dialog.setMinimumWidth(680)
+    form = qt.QFormLayout(dialog)
+
+    setup_help_button = qt.QPushButton("NMT v2.1 setup help", dialog)
+    setup_help_button.setObjectName("NMTv21SetupHelpButton")
+    form.addRow(setup_help_button)
+
+    def open_setup_help():
+        global ATLAS_SETUP_HELP_DIALOG
+        ATLAS_SETUP_HELP_DIALOG = show_atlas_setup_help(dialog)
+
+    setup_help_button.connect("clicked()", open_setup_help)
+
+    def file_row(default_path, label):
+        row = qt.QWidget(dialog)
+        layout = qt.QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        edit = qt.QLineEdit(str(default_path) if default_path else "", row)
+        browse = qt.QPushButton("Browse…", row)
+        layout.addWidget(edit)
+        layout.addWidget(browse)
+
+        def choose_file():
+            result = qt.QFileDialog.getOpenFileName(
+                dialog, label, edit.text, "Volumes (*.nii *.nii.gz *.nrrd);;All files (*)")
+            path = result[0] if isinstance(result, (tuple, list)) else result
+            if path:
+                edit.setText(path)
+        browse.connect("clicked()", choose_file)
+        form.addRow(label, row)
+        return edit
+
+    template_edit = file_row(REF_PATH, "Template intensity volume:")
+    atlas_edit = file_row(ARM_PATH, "ARM L6 label volume:")
+    guidance = qt.QLabel(
+        "Guidance\n"
+        "1. Choose a 3-D template and ARM level-6 compatible label map. "
+        "All 16 ARM L6 IDs are required; names and hemisphere are interpreted from those IDs.\n"
+        "2. Load checks that both files have matching image grids. Nothing is resampled.\n"
+        "3. Select L/R and a seed, apply its full-insula scope, then choose Paint. "
+        "Visible donor seeds transfer voxels; hidden siblings can overlap, which the mirror check rejects.\n"
+        "4. Finish one side, then Mirror selected side (new candidate) and Save mirrored candidate. "
+        "Both working groups are preserved.", dialog)
+    guidance.setWordWrap(True)
+    form.addRow(guidance)
+
+    load_button = qt.QPushButton("Validate inputs and load groups", dialog)
+    form.addRow(load_button)
+    side_combo = qt.QComboBox(dialog)
+    side_combo.addItems(["L", "R"])
+    parcel_combo = qt.QComboBox(dialog)
+    refresh_button = qt.QPushButton("Refresh parcel list", dialog)
+    select_row = qt.QWidget(dialog)
+    select_layout = qt.QHBoxLayout(select_row)
+    select_layout.setContentsMargins(0, 0, 0, 0)
+    select_layout.addWidget(side_combo)
+    select_layout.addWidget(parcel_combo)
+    select_layout.addWidget(refresh_button)
+    form.addRow("Editing group / seed:", select_row)
+    apply_button = qt.QPushButton("Apply scope restriction", dialog)
+    save_button = qt.QPushButton("Save selected side…", dialog)
+    action_row = qt.QWidget(dialog)
+    action_layout = qt.QHBoxLayout(action_row)
+    action_layout.setContentsMargins(0, 0, 0, 0)
+    action_layout.addWidget(apply_button)
+    action_layout.addWidget(save_button)
+    form.addRow(action_row)
+    mirror_button = qt.QPushButton("Mirror selected side (new candidate)", dialog)
+    save_mirror_button = qt.QPushButton("Save mirrored candidate…", dialog)
+    mirror_row = qt.QWidget(dialog)
+    mirror_layout = qt.QHBoxLayout(mirror_row)
+    mirror_layout.setContentsMargins(0, 0, 0, 0)
+    mirror_layout.addWidget(mirror_button)
+    mirror_layout.addWidget(save_mirror_button)
+    form.addRow(mirror_row)
+    status = qt.QLabel("Choose inputs, then validate and load. Opening this panel does not change the scene.", dialog)
+    status.setWordWrap(True)
+    form.addRow("Status:", status)
+
+    def set_ready(ready):
+        side_combo.setEnabled(ready)
+        parcel_combo.setEnabled(ready)
+        refresh_button.setEnabled(ready)
+        apply_button.setEnabled(ready)
+        save_button.setEnabled(ready)
+        mirror_button.setEnabled(ready)
+
+    def invalidate(*_):
+        set_ready(False)
+        status.setText("Inputs changed. Validate and load again before applying a scope or saving.")
+
+    def refresh_parcels(*_):
+        parcel_combo.clear()
+        parcel_combo.addItem("(choose a parcel)", "")
+        side = side_combo.currentText
+        node = _find(ACTIVE_SEG_NAMES[side])
+        if node is None:
+            return
+        data = node.GetSegmentation()
+        for index in range(data.GetNumberOfSegments()):
+            segment_id = data.GetNthSegmentID(index)
+            if segment_id == SCOPE_IDS[side]:
+                continue
+            segment = data.GetSegment(segment_id)
+            parcel_combo.addItem(segment.GetName(), segment_id)
+
+    def load_groups():
+        set_ready(False)
+        try:
+            loaded = run(template_path=template_edit.text, atlas_path=atlas_edit.text,
+                          output_dir=ACTIVE_OUTPUT_DIR)
+            if not loaded:
+                raise RuntimeError("input groups were not loaded")
+            refresh_parcels()
+            set_ready(True)
+            status.setText("Inputs validated and groups loaded. Confirm source, side, seed and mask read-back before painting.")
+        except Exception as exc:
+            status.setText(f"Load failed: {exc}")
+            qt.QMessageBox.critical(dialog, "Insula input validation/load failed", str(exc))
+
+    def apply_restriction():
+        side = side_combo.currentText
+        target = parcel_combo.itemData(parcel_combo.currentIndex)
+        if not target:
+            status.setText("Choose a parcel before applying the scope restriction.")
+            return
+        try:
+            result = use_scope(side, target)
+            status.setText(result)
+        except Exception as exc:
+            status.setText(f"Scope not applied: {exc}")
+            qt.QMessageBox.warning(dialog, "Scope not applied", str(exc))
+
+    def save_side():
+        side = side_combo.currentText
+        node_name = ACTIVE_SEG_NAMES[side]
+        segmentation = _find(node_name)
+        if segmentation is None:
+            status.setText(f"Cannot find loaded group {node_name}")
+            return
+        result = qt.QFileDialog.getSaveFileName(
+            dialog, f"Save {node_name}", str(ACTIVE_OUTPUT_DIR / f"{node_name}.seg.nrrd"),
+            "Slicer segmentation (*.seg.nrrd)")
+        path = result[0] if isinstance(result, (tuple, list)) else result
+        if not path:
+            return
+        if not path.lower().endswith(".seg.nrrd"):
+            path += ".seg.nrrd"
+        try:
+            if not slicer.util.saveNode(segmentation, path):
+                raise RuntimeError("Slicer saveNode returned failure")
+            status.setText(f"Saved {node_name} to {path}")
+        except Exception as exc:
+            status.setText(f"Save failed: {exc}")
+            qt.QMessageBox.critical(dialog, "Segmentation save failed", str(exc))
+
+    def mirror_selected_side():
+        global LAST_MIRROR_CANDIDATE
+        side = side_combo.currentText
+        try:
+            LAST_MIRROR_CANDIDATE = mirror_side(side)
+            save_mirror_button.setEnabled(True)
+            status.setText(
+                f"Created new {('R' if side == 'L' else 'L')} mirror candidate "
+                f"{LAST_MIRROR_CANDIDATE.GetName()}; source working groups were preserved. "
+                "Inspect the candidate before saving.")
+        except Exception as exc:
+            status.setText(f"Mirror refused: {exc}")
+            qt.QMessageBox.warning(dialog, "Mirror candidate not created", str(exc))
+
+    def save_mirror_candidate():
+        if LAST_MIRROR_CANDIDATE is None:
+            status.setText("Create a mirror candidate before saving.")
+            return
+        result = qt.QFileDialog.getSaveFileName(
+            dialog, "Save mirrored candidate", str(ACTIVE_OUTPUT_DIR / f"{LAST_MIRROR_CANDIDATE.GetName()}.seg.nrrd"),
+            "Slicer segmentation (*.seg.nrrd)")
+        path = result[0] if isinstance(result, (tuple, list)) else result
+        if not path:
+            return
+        if not path.lower().endswith(".seg.nrrd"):
+            path += ".seg.nrrd"
+        try:
+            receipt = save_mirrored_candidate(LAST_MIRROR_CANDIDATE, path)
+            status.setText(
+                f"Saved candidate {receipt['candidate_name']} to {receipt['saved_path']} "
+                f"({receipt['saved_bytes']} bytes; SHA-256 {receipt['saved_sha256']}).")
+        except Exception as exc:
+            status.setText(f"Mirror candidate save refused/failed: {exc}")
+            qt.QMessageBox.critical(dialog, "Mirror candidate save failed", str(exc))
+
+    template_edit.textChanged.connect(invalidate)
+    atlas_edit.textChanged.connect(invalidate)
+    side_combo.currentIndexChanged.connect(refresh_parcels)
+    load_button.connect("clicked()", load_groups)
+    refresh_button.connect("clicked()", refresh_parcels)
+    apply_button.connect("clicked()", apply_restriction)
+    save_button.connect("clicked()", save_side)
+    mirror_button.connect("clicked()", mirror_selected_side)
+    save_mirror_button.connect("clicked()", save_mirror_candidate)
+    set_ready(False)
+    save_mirror_button.setEnabled(LAST_MIRROR_CANDIDATE is not None)
+    dialog.show()
+    INSULA_GUI = dialog
+    return dialog
+
+
+def _build_cli_parser():
+    parser = argparse.ArgumentParser(
+        prog="armins.py",
+        description="Validate and prepare ARM insula level-6 inputs; open the editor in 3D Slicer.",
+    )
+    commands = parser.add_subparsers(dest="command")
+    check = commands.add_parser("check", help="read-only validate a 3-D ARM L6 label volume")
+    check.add_argument("--template", default=str(REF_PATH) if REF_PATH else None)
+    check.add_argument("--atlas", default=str(ARM_PATH) if ARM_PATH else None)
+    check.add_argument("--level", type=int, choices=(6,), default=6)
+    check.add_argument("--dry-run", action="store_true", help="print resolved validation receipt; always read-only")
+    prepare = commands.add_parser("prepare", help="extract explicit ARM level 6 from a 3/4/5-D NIfTI")
+    prepare.add_argument("--template", default=str(REF_PATH) if REF_PATH else None)
+    prepare.add_argument("--atlas", default=str(ARM_PATH) if ARM_PATH else None)
+    prepare.add_argument("--level", type=int, choices=(6,), required=True)
+    prepare.add_argument("--output-dir", default=str(OUTPUT_DIR))
+    prepare.add_argument("--dry-run", action="store_true", help="report outputs without writing files")
+    commands.add_parser("gui", help="open the editor inside 3D Slicer")
+    return parser
+
+
+def main(argv=None):
+    parser = _build_cli_parser()
+    args = parser.parse_args(argv)
+    if args.command == "check":
+        result = check_inputs(args.template, args.atlas, level=args.level)
+    elif args.command == "prepare":
+        result = prepare_level6(args.template, args.atlas, level=args.level,
+                                output_dir=args.output_dir, dry_run=args.dry_run)
+    elif args.command == "gui":
+        show_gui()
+        return 0
+    elif args.command is None:
+        if _has_slicer_scene():
+            show_gui()
+            return 0
+        parser.print_help()
+        return 0
+    else:
+        parser.error(f"unsupported command: {args.command}")
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    # Opening the file from Slicer's Python Console still presents the GUI;
+    # ordinary Python runs the portable CLI without importing/starting a GUI.
+    if _has_slicer_scene():
+        show_gui()
+    else:
+        raise SystemExit(main())

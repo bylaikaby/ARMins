@@ -1,0 +1,31 @@
+# External scientific inputs and generated outputs
+atlas-data/
+data/
+inputs/
+outputs/
+work/
+*.nii
+*.nii.gz
+*.nrrd
+*.mrb
+*.mrml
+*receipt.json
+
+# Environments and transient files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Local configuration and credentials
+.env
+.env.*
+*_local.*
+*credentials*
+*secret*
+*token*
