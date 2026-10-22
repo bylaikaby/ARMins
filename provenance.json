@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
   "recorded_date": "2026-10-22",
-  "tool_version": "0.7.2 (local/unreleased)",
+  "tool_version": "0.7.3 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -32,20 +32,20 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "a236c958c92b2e6e7f0d5f6f25de00e4475447298f8601fcfb6c4f1996da841b",
-      "bytes": 23913,
+      "sha256": "1ef3e54279aa100d6c2e3314043a58f92ccb9eb93db1054b8c3c30f4cff50b20",
+      "bytes": 24777,
       "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "16a61b824e62f8805cd5c0a4cc7e03564683244c73af140a5dc04a03f12a3984",
+      "sha256": "393bfc90d43d6772767b79b23663cacf8cbcbe08b71823b4c39bad1523df1bb3",
       "bytes": 101900,
-      "inputs": "Published 0.7.1 plus GUI/CLI version visibility; scientific algorithms unchanged."
+      "inputs": "Published 0.7.2; only tool version incremented for cloud testing update."
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "4ef50d03aa3eb170e7ebc0889a799990574bf068a39434eca8cd03054e55ab72",
-      "bytes": 3801,
+      "sha256": "d40170abb09b0662c3188f0fc90721aa3c9418cafad02b0ddf98c4c195dfaacf",
+      "bytes": 4461,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,8 +74,8 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "7f905a79fb328757748a3ae0ac18195c428db23927d805356c2c19ccccd9e24e",
-      "bytes": 7888,
+      "sha256": "5eea29a68acdbf82ea18702eff868dd8aa530327b0505385394fe2f11f1acc83",
+      "bytes": 9045,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
@@ -104,8 +104,8 @@
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
-      "sha256": "0dc191cec8b522608cbc3d59bc3b98f9db5b76be365a6578f68c63626f84a58a",
-      "bytes": 30947,
+      "sha256": "6d7e96a5386c0d89466cb3824bb1764b9046ff89442bbd759cde612222e9048b",
+      "bytes": 31958,
       "inputs": "Registered baseline and standalone changes"
     },
     "arm_hierarchy.py": {
@@ -128,9 +128,15 @@
     },
     "docs/editor.png": {
       "purpose": "Native versioned GUI screenshot for README.",
-      "inputs": "Actual Slicer 5.12.0 design capture with current 0.7.2 module; blank inputs, no private paths.",
-      "sha256": "6975470be6edcbc54987b2ed38cbed46cca28f5fa614b3df05a6140de4aecded",
-      "bytes": 108377
+      "inputs": "Actual 0.7.3 Slicer 5.12.0 import-based design preflight; blank paths.",
+      "sha256": "01232101d9a9dc1144da3d45b8e2eaad58929e40d13117ff9a15fc8e89988fcf",
+      "bytes": 108380
+    },
+    ".github/workflows/slicer-cloud.yml": {
+      "purpose": "Manual fresh cloud-machine Slicer import/design and public-input native checks.",
+      "inputs": "Official Slicer 5.12.0 download-page SHA512 values; official AFNI symmetric v2.1 archive with registered input SHA256; existing native harness.",
+      "sha256": "04366149a9228166776e67c1b2a81c1e78cd5f773a6dc4fa79be1355b234e688",
+      "bytes": 7175
     }
   },
   "manifest_self": {
@@ -550,7 +556,17 @@
     },
     "scope": "GUI-only update; AST comparison confirms all existing non-GUI functions unchanged. Earlier insula, CLI and 837-node audit evidence retained in baseline_validation_0_7_0 with its original tested hashes."
   },
-  "validation": {
+  "version_display": {
+    "source": "armins.py VERSION",
+    "surfaces": [
+      "main GUI title and header",
+      "setup-help title",
+      "CLI --version and help",
+      "generated receipts"
+    ],
+    "baseline_commit": "5b9f0f2d493026e2327083f3f9e5df468461a3ca"
+  },
+  "version_visibility_validation_0_7_2": {
     "tested_module_sha256": "16a61b824e62f8805cd5c0a4cc7e03564683244c73af140a5dc04a03f12a3984",
     "synthetic_tests": {
       "passed": 49,
@@ -575,14 +591,33 @@
     },
     "scope": "Version display only. Existing function AST differences limited to show_gui, show_atlas_setup_help and _build_cli_parser; prior hierarchy/mirror checks retained under their tested hashes."
   },
-  "version_display": {
-    "source": "armins.py VERSION",
-    "surfaces": [
-      "main GUI title and header",
-      "setup-help title",
-      "CLI --version and help",
-      "generated receipts"
-    ],
-    "baseline_commit": "5b9f0f2d493026e2327083f3f9e5df468461a3ca"
+  "validation": {
+    "tested_module_sha256": "393bfc90d43d6772767b79b23663cacf8cbcbe08b71823b4c39bad1523df1bb3",
+    "synthetic_tests": {
+      "passed": 49,
+      "failed": 0
+    },
+    "native_local_preflight": {
+      "version": "5.12.0",
+      "checks": [
+        "dialog-local VisPa palette and redundant L/R colour-direction cues leave scene and Slicer theme unchanged",
+        "dark inactive text and placeholder; distinct purple region action retains disabled state",
+        "setup help opens without scene changes and exposes official links and copyable install command",
+        "native setup-help Close button accepts the Qt clicked signal and closes the dialog",
+        "main title/banner and help title show the authoritative version; mirror controls retained; screenshot saved"
+      ],
+      "import_mode": "documented import armins; repository path explicitly added",
+      "status": "passed"
+    },
+    "cloud_native": {
+      "status": "pending",
+      "workflow": ".github/workflows/slicer-cloud.yml",
+      "targets": [
+        "ubuntu-22.04",
+        "windows-latest"
+      ],
+      "slicer_version": "5.12.0",
+      "scope": "Fresh GitHub-hosted VMs with official Slicer; documented import and GUI design before public-input native tests."
+    }
   }
 }

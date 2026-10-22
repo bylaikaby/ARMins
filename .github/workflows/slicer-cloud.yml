@@ -1,0 +1,130 @@
+# Version: 0.7.3 (local/unreleased)
+# Last updated: 2026-10-22
+# Change history: CHANGELOG.md
+name: Fresh-machine Slicer
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Run design first; review screenshots before hierarchy/behavior
+        required: true
+        default: design
+        type: choice
+        options: [design, hierarchy, behavior]
+
+permissions:
+  contents: read
+
+jobs:
+  slicer:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      ARMINS_TEST_PHASE: ${{ inputs.phase }}
+      ARMINS_TEST_IMPORT: '1'
+      PYTHONUTF8: '1'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: ARMins fresh install
+      - name: Linux runtime libraries and virtual display
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libglu1-mesa libpulse-mainloop-glib0 libnss3 libasound2 libsm6 libxt6 libxrender1 libxkbcommon-x11-0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
+      - name: Download and verify official Slicer 5.12.0
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = Join-Path $env:RUNNER_TEMP 'armins-cloud-evidence'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          "ARMINS_TEST_OUTPUT=$out" >> $env:GITHUB_ENV
+          $install = Join-Path $env:RUNNER_TEMP 'Slicer'
+          $curl = if ($IsWindows) { 'curl.exe' } else { 'curl' }
+          if ($IsWindows) {
+            $url = 'https://download.slicer.org/bitstream/6a3b7cf33e1fb85a5846ed22'
+            $sha = '4fd7733c872dbe8bcf7fb2ff0f0f49414db10dcdff646fb30eb99a68c56455a086b745b0cc11bf9408a43f362762241bdc60de1fd6bac63ac67ad7180d4ffab1'
+            $package = Join-Path $env:RUNNER_TEMP 'Slicer.exe'
+          } else {
+            $url = 'https://download.slicer.org/bitstream/6a3b212e3e1fb85a5846b058'
+            $sha = 'dbdd960b2a90b250fd2fba2510696ff227f647682e3c20ad3b9f62b45454e8ae3fa00595bc796ccb61e60bf10b6607bfdf79d03df1df1c695ba3731a2705bd08'
+            $package = Join-Path $env:RUNNER_TEMP 'Slicer.tar.gz'
+          }
+          & $curl --fail --location --retry 3 --connect-timeout 30 --max-time 600 --output $package $url
+          if ($LASTEXITCODE -ne 0) { throw 'Slicer download failed' }
+          if ((Get-FileHash $package -Algorithm SHA512).Hash.ToLower() -ne $sha) { throw 'Slicer checksum mismatch' }
+          if ($IsWindows) {
+            $p = Start-Process $package -ArgumentList @('/S', "/D=$install") -Wait -PassThru -WindowStyle Hidden
+            if ($p.ExitCode -ne 0) { throw "Slicer installer failed: $($p.ExitCode)" }
+            $slicer = Join-Path $install 'Slicer.exe'
+          } else {
+            New-Item -ItemType Directory -Force $install | Out-Null
+            tar -xzf $package -C $install --strip-components=1
+            if ($LASTEXITCODE -ne 0) { throw 'Slicer extraction failed' }
+            $slicer = Join-Path $install 'Slicer'
+          }
+          if (-not (Test-Path -LiteralPath $slicer)) { throw 'Slicer executable missing' }
+          "ARMINS_SLICER=$slicer" >> $env:GITHUB_ENV
+          @{slicer_version='5.12.0'; package_url=$url; sha512=$sha; runner_os=$env:RUNNER_OS; image_version=$env:ImageVersion; github_sha=$env:GITHUB_SHA; phase=$env:ARMINS_TEST_PHASE; slicer_pip_installs=@(); cache_used=$false} | ConvertTo-Json | Set-Content (Join-Path $out 'cloud-runtime.json')
+      - name: Download public AFNI inputs for native load tests
+        if: inputs.phase != 'design'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $env:RUNNER_TEMP 'NMT_v2.1_sym.tgz'
+          $atlasRoot = Join-Path $env:RUNNER_TEMP 'atlas-data'
+          New-Item -ItemType Directory -Force $atlasRoot | Out-Null
+          $curl = if ($IsWindows) { 'curl.exe' } else { 'curl' }
+          & $curl --fail --location --retry 3 --connect-timeout 30 --max-time 600 --output $archive https://afni.nimh.nih.gov/pub/dist/atlases/macaque/nmt/NMT_v2.1_sym.tgz
+          if ($LASTEXITCODE -ne 0) { throw 'AFNI download failed' }
+          tar -xzf $archive -C $atlasRoot
+          if ($LASTEXITCODE -ne 0) { throw 'AFNI extraction failed' }
+          $files = @(
+            @('ARMINS_TEMPLATE', 'NMT_v2.1_sym_SS.nii.gz', '9e37a94c4b9e5865aabb9fd3b51dcc3b2cb16f3daed39c967e68acf16cf92bee'),
+            @('ARMINS_ATLAS', 'ARM_6_in_NMT_v2.1_sym.nii.gz', '7df7e53df5aa1f142bf017aad89f1fde3c84a87a3e4f93adc7dbded69bc79338'),
+            @('ARMINS_HIERARCHY', 'ARM_key_table.csv', 'f8214369170e2847ad1558295858222308c14ce98c8a91de88d1b40bebf5a39c')
+          )
+          foreach ($item in $files) {
+            $matches = @(Get-ChildItem -LiteralPath $atlasRoot -File -Recurse -Filter $item[1])
+            if ($matches.Count -ne 1) { throw "Expected one $($item[1]); found $($matches.Count)" }
+            $path = $matches[0].FullName
+            if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLower() -ne $item[2]) { throw "Input checksum mismatch: $($item[1])" }
+            "$($item[0])=$path" >> $env:GITHUB_ENV
+          }
+      - name: Import and run actual Slicer GUI from an unrelated directory
+        working-directory: ${{ runner.temp }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:GITHUB_WORKSPACE 'ARMins fresh install/tests/slicer_smoke.py'
+          $env:ARMINS_OUTPUT_DIR = Join-Path $env:ARMINS_TEST_OUTPUT 'outputs'
+          if ($IsWindows) {
+            $p = Start-Process $env:ARMINS_SLICER -ArgumentList @('--testing', '--no-splash', '--python-script', "`"$script`"") -RedirectStandardOutput (Join-Path $env:ARMINS_TEST_OUTPUT 'stdout.log') -RedirectStandardError (Join-Path $env:ARMINS_TEST_OUTPUT 'stderr.log') -Wait -PassThru -WindowStyle Hidden
+            $code = $p.ExitCode
+          } else {
+            & xvfb-run -a -s '-screen 0 1920x1600x24' $env:ARMINS_SLICER --testing --no-splash --python-script $script 2>&1 | Tee-Object -FilePath (Join-Path $env:ARMINS_TEST_OUTPUT 'console.log')
+            $code = $LASTEXITCODE
+          }
+          $receiptPath = Join-Path $env:ARMINS_TEST_OUTPUT "$($env:ARMINS_TEST_PHASE)_receipt.json"
+          if (-not (Test-Path -LiteralPath $receiptPath)) { throw "No test receipt; launcher exit $code" }
+          $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+          if ($code -ne 0 -or $receipt.status -ne 'passed') { throw "Native test failed: $($receipt.error); launcher exit $code" }
+          $receipt | ConvertTo-Json -Depth 30
+      - name: Keep small logs, receipts and GUI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: slicer-${{ matrix.os }}-${{ inputs.phase }}
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/armins-cloud-evidence/*.json
+            ${{ runner.temp }}/armins-cloud-evidence/*.log
+            ${{ runner.temp }}/armins-cloud-evidence/*.png
+          if-no-files-found: warn

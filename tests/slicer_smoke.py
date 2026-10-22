@@ -1,6 +1,6 @@
 """Isolated native Slicer integration check for ARMins.
 
-Version: 0.7.2 (local/unreleased)
+Version: 0.7.3 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: candidate
@@ -16,10 +16,14 @@ Required environment: ARMINS_TEST_OUTPUT (new/empty folder), ARMINS_TEMPLATE,
 and ARMINS_ATLAS (registered local 3-D L6 input). Hierarchy phase additionally
 requires ARMINS_HIERARCHY pointing to the external provider CSV. Optional:
 ARMINS_TEST_PHASE ('design', 'behavior', or 'hierarchy'; default behavior),
-ARMINS_OUTPUT_DIR.
+ARMINS_OUTPUT_DIR. Set ARMINS_TEST_IMPORT=1 to exercise documented module
+import from an unrelated working directory, without pip-installing into Slicer.
 """
 
 import hashlib
+import importlib
+import platform
+import sys
 import json
 import os
 from pathlib import Path
@@ -48,7 +52,20 @@ def main():
         print('PASS:', label, flush=True)
 
     try:
-        ns = runpy.run_path(str(loader), run_name='armins_mirror_native_test')
+        if os.environ.get('ARMINS_TEST_IMPORT') == '1':
+            # Match the documented console startup from an unrelated directory.
+            sys.path.insert(0, str(loader.resolve().parent))
+            module = importlib.import_module('armins')
+            assert Path(module.__file__).resolve() == loader.resolve()
+            ns = vars(module)
+            receipt['import_mode'] = 'documented import armins; repository path explicitly added'
+            receipt['imported_module'] = str(Path(module.__file__).resolve())
+        else:
+            ns = runpy.run_path(str(loader), run_name='armins_mirror_native_test')
+            receipt['import_mode'] = 'runpy native integration'
+        receipt['runtime'] = {'python': sys.version, 'numpy': np.__version__,
+                              'os': platform.platform(), 'working_directory': str(Path.cwd())}
+        receipt['tool_version'] = ns['VERSION']
         glob = ns['run'].__globals__
         if phase == 'design':
             main_window = slicer.util.mainWindow()

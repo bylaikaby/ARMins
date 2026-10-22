@@ -2,6 +2,17 @@
 
 One consolidated history. README.md is the operator guide.
 
+## 0.7.3 - 2026-10-22 (local/unreleased)
+
+- Add a manual fresh-machine Slicer workflow for Windows/Ubuntu: official fixed
+  5.12.0 packages, verified checksums, public AFNI inputs, no Slicer pip installs
+  or user caches; GUI screenshots and machine-readable native test receipts.
+- Extend the native harness to exercise documented import startup from outside
+  the checkout. The workflow checks receipt status as well as process exit.
+- Keep tool version visible as 0.7.3. Atlas/edit/mirror algorithms unchanged.
+- Local preflight: 49 synthetic tests, import-based native design checks and
+  YAML/PowerShell syntax checks passed. Cloud execution is pending.
+
 ## 0.7.2 - 2026-10-22 (local/unreleased)
 
 - Show the authoritative tool version in the main GUI title/header, setup-help

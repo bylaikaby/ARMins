@@ -1,6 +1,6 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.7.2 (local/unreleased)
+Version: 0.7.3 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: experimental
@@ -24,7 +24,7 @@ try:
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.7.2 (local/unreleased)"
+VERSION = "0.7.3 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):

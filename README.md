@@ -22,7 +22,7 @@ review and saving. Optional command-line operations follow the GUI workflow.
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs) ·
 [Command line](#optional-command-line-tools)
 
-Current tool version: **0.7.2 (local/unreleased)**. The GUI title/header and
+Current tool version: **0.7.3 (local/unreleased)**. The GUI title/header and
 `python armins.py --version` show the same value. See [CHANGELOG.md](CHANGELOG.md)
 for dated changes and validation.
 
@@ -406,6 +406,20 @@ existing destinations. A supplied 3-D ARM6 file is returned without duplication.
 
 
 ## Validation and review
+
+A manually dispatched **Fresh-machine Slicer** workflow installs official Slicer
+5.12.0 on new GitHub-hosted Windows and Ubuntu VMs. It imports ARMins from a path
+containing spaces and an unrelated working directory, without pip-installing
+packages into Slicer. Run `design`, review the screenshots, then run `hierarchy`
+or `behavior` with the public AFNI NMT/ARM archive. Each package/input is checked
+against its registered checksum. No local configuration, cache or atlas is copied.
+Small receipts, runtime details, logs and screenshots are retained for 14 days;
+no atlas volumes or edited segmentations are uploaded as artifacts.
+
+This workflow extends the existing synthetic Python CI. Cloud-native results
+are pending until a run completes; see provenance.json and Actions for the
+observed status. It does not establish compatibility with every PC or GPU.
+
 
 ```sh
 python -m unittest discover -s tests -p "test_*.py" -v

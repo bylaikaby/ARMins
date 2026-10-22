@@ -26,6 +26,24 @@ operation. Template images remain external references; source data are preserved
 
 ## Operations journal
 
+### 2026-10-22 | Agent Codex | Fresh cloud-machine initialization investigation
+
+- Trigger: reported initialization bugs without a traceback; asked whether
+  dependencies were responsible and requested a fresh cloud-computer test.
+  Prior evidence covered local native Slicer plus fresh cloud Python tests,
+  not a cloud Slicer installation. The exact reported failure remains unknown.
+- Added a bounded manual workflow using new GitHub-hosted Windows/Ubuntu VMs,
+  official fixed/checksummed Slicer 5.12.0 and separately fetched public AFNI
+  inputs. No local package/config/cache or personal data is transferred.
+- Test stages: design/import first, visual review of actual cloud screenshots,
+  then public-input hierarchy/load behavior. Local preflight passed 49 synthetic
+  tests and import-based design checks. Cloud results are pending.
+- Current entry: Actions / Fresh-machine Slicer. Receipts, logs and screenshots
+  identify the tested commit/runtime; volumes and segmentations stay ephemeral.
+  Actual user startup error, older Slicer versions, consumer-PC GPU/driver
+  differences and anatomical acceptance remain separate unresolved questions.
+
+
 ### 2026-10-22 | Agent Codex | Visible tool version and changelog
 
 - Request: maintain the changelog, show a version in GUI and CLI, and push.
