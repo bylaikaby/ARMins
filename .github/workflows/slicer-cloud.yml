@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y xvfb libglu1-mesa libpulse-mainloop-glib0 libnss3 libasound2 libsm6 libxt6 libxrender1 libxkbcommon-x11-0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
+          sudo apt-get install -y xvfb libglu1-mesa libpulse-mainloop-glib0 libnss3 libasound2 libsm6 libxt6 libxrender1 libxkbcommon-x11-0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 qt5dxcb-plugin
       - name: Download and verify official Slicer 5.12.0
         run: |
           $ErrorActionPreference = 'Stop'

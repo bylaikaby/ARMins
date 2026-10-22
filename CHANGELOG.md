@@ -10,6 +10,9 @@ One consolidated history. README.md is the operator guide.
 - Extend the native harness to exercise documented import startup from outside
   the checkout. The workflow checks receipt status as well as process exit.
 - Keep tool version visible as 0.7.3. Atlas/edit/mirror algorithms unchanged.
+- First cloud design run: Windows passed; Ubuntu Slicer failed before Python
+  with missing libxcb-shape.so.0. Added its XCB runtime and the documented
+  qt5dxcb-plugin dependency; rerun pending.
 - Local preflight: 49 synthetic tests, import-based native design checks and
   YAML/PowerShell syntax checks passed. Cloud execution is pending.
 
