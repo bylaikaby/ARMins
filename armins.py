@@ -1,6 +1,6 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.6.0 (local/unreleased)
+Version: 0.7.0 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: experimental
@@ -12,8 +12,10 @@ in the repository CHANGELOG.md; see that file for source mapping and validation.
 from pathlib import Path
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 import numpy as np
@@ -22,7 +24,7 @@ try:
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.6.0 (local/unreleased)"
+VERSION = "0.7.0 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):
@@ -47,6 +49,7 @@ REF_PATH = _environment_path("ARMINS_TEMPLATE")
 ARM_PATH = _environment_path("ARMINS_ATLAS")
 OUTPUT_DIR = _environment_path("ARMINS_OUTPUT_DIR") or (Path.cwd() / "outputs").resolve()
 ACTIVE_OUTPUT_DIR = OUTPUT_DIR
+HIERARCHY_PATH = _environment_path("ARMINS_HIERARCHY")
 T1_NAME, ARM_NAME = "NMT_v2.1_sym_SS", "ARM_L6_in_NMT_v2.1_sym"
 # Public source hashes identify the known NMT reference/ARM-L6 pair regardless of
 # its local install path. Other inputs are handled as an explicit custom pair.
@@ -60,9 +63,11 @@ DEFAULT_SEG_NAMES = {"L": "ARM_INS_L6_L_working", "R": "ARM_INS_L6_R_working"}
 ACTIVE_SEG_NAMES = dict(DEFAULT_SEG_NAMES)
 ACTIVE_T1_NAME = T1_NAME
 LAST_MIRROR_CANDIDATE = None
-SCOPE_IDS = {"L": "L-INS-Scope", "R": "R-INS-scope"}
-FULL_INS_IDS = {"L": (39, 41, 42, 43, 226, 228, 229, 230),
-                "R": (539, 541, 542, 543, 726, 728, 729, 730)}
+DEFAULT_SCOPE_IDS = {"L": "L-INS-Scope", "R": "R-INS-scope"}
+SCOPE_IDS = dict(DEFAULT_SCOPE_IDS)
+DEFAULT_FULL_INS_IDS = {"L": (39, 41, 42, 43, 226, 228, 229, 230),
+                        "R": (539, 541, 542, 543, 726, 728, 729, 730)}
+FULL_INS_IDS = dict(DEFAULT_FULL_INS_IDS)
 EXPECTED_VOXELS_PER_SIDE = 30256
 SCOPE_COLORS = {"L": (0.10, 0.78, 0.82), "R": (0.95, 0.48, 0.24)}
 ARM_TYPES = (
@@ -75,16 +80,163 @@ ARM_TYPES = (
     ("Ig", 229, (0.88, 0.25, 0.20)),
     ("Ri", 230, (0.55, 0.38, 0.22)),
 )
+DEFAULT_ARM_TYPES = ARM_TYPES
 ARM_SEGMENTS = tuple(
     (f"C{prefix}_{name}", label_id + offset, side, color)
     for side, prefix, offset in (("L", "L", 0), ("R", "R", 500))
     for name, label_id, color in ARM_TYPES
 )
+DEFAULT_ARM_SEGMENTS = ARM_SEGMENTS
 ARM_SEGMENT_IDS = {f"ARM_L6_{label_id}": side
                    for _, label_id, side, _ in ARM_SEGMENTS}
 ARM_MIRROR_IDS = {label_id: label_id + 500 for label_id in (39, 41, 42, 43, 226, 228, 229, 230)}
+DEFAULT_ARM_MIRROR_IDS = dict(ARM_MIRROR_IDS)
+ACTIVE_REGION_PROFILE = None
+ACTIVE_REGION_LABEL = "insula"
+PENDING_GUI_PROFILE = None
 MIRROR_SYMMETRY_ATOL = 1e-5
 MIRROR_HELPER_TAG = "Insula.MirrorRole"
+
+
+def _discover_hierarchy_path(atlas_path=None):
+    configured = _environment_path("ARMINS_HIERARCHY")
+    if configured and configured.is_file():
+        return configured
+    if atlas_path:
+        atlas = Path(atlas_path).expanduser().resolve()
+        for directory in (atlas.parent, *list(atlas.parents)[:3]):
+            candidate = directory / "tables_ARM" / "ARM_key_table.csv"
+            if candidate.is_file():
+                return candidate
+    return configured
+
+
+def _load_hierarchy_class(path=None):
+    """Load sibling resolver without relying on the current working directory."""
+    candidate = Path(path).expanduser().resolve() if path else _discover_hierarchy_path(ARM_PATH)
+    resolver = None
+    if "__file__" in globals():
+        sibling = Path(__file__).resolve().with_name("arm_hierarchy.py")
+        if sibling.is_file():
+            resolver = sibling
+    if resolver is None:
+        for folder in sys.path:
+            candidate_file = Path(folder or Path.cwd()) / "arm_hierarchy.py"
+            if candidate_file.is_file():
+                resolver = candidate_file.resolve()
+                break
+    if resolver is None:
+        raise RuntimeError(
+            "ARM hierarchy support file arm_hierarchy.py is not available. "
+            "Add the ARMins checkout to sys.path before executing armins.py."
+        )
+    spec = importlib.util.spec_from_file_location("_armins_arm_hierarchy", resolver)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"could not load ARM hierarchy resolver: {resolver}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if candidate is None:
+        raise ValueError("hierarchy CSV is not configured; pass --hierarchy or set ARMINS_HIERARCHY")
+    return module.ArmHierarchy, candidate
+
+
+def _validated_profile(profile):
+    if not isinstance(profile, dict) or profile.get("schema") != "armins.region-profile.v1":
+        raise ValueError("region profile must be an armins.region-profile.v1 dictionary")
+    required = ("source_path", "source_sha256", "profile_hash", "selected",
+                "left_leaves", "right_leaves", "pair_map")
+    if any(key not in profile for key in required):
+        raise ValueError("region profile is missing required source, identity, or pair-map fields")
+    identity = {key: profile[key] for key in
+                ("schema", "source_sha256", "left_node", "right_node",
+                 "left_leaves", "right_leaves", "pair_map")}
+    actual = hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest().upper()
+    if actual != str(profile["profile_hash"]).upper():
+        raise ValueError("region profile hash does not match its resolved identities and pair map")
+    working_side = str(profile.get("working_side", "")).upper()
+    if working_side not in ("L", "R"):
+        raise ValueError("region profile working_side must be L or R")
+    expected_selected = profile["left_node"] if working_side == "L" else profile["right_node"]
+    expected_counterpart = profile["right_node"] if working_side == "L" else profile["left_node"]
+    if profile.get("selected") != expected_selected or profile.get("counterpart") != expected_counterpart:
+        raise ValueError("region profile selected node/counterpart do not match its working side")
+    source_path = Path(profile["source_path"]).expanduser().resolve()
+    if not source_path.is_file() or _sha256_file(source_path) != str(profile["source_sha256"]).upper():
+        raise ValueError("region hierarchy table is missing or its hash changed after profile selection")
+    left = profile["left_leaves"]
+    right = profile["right_leaves"]
+    pairs = profile["pair_map"]
+    if not left or not right or len(left) != len(right) or len(pairs) != len(left):
+        raise ValueError("region profile must contain equal nonempty bilateral leaves and pairs")
+    for side, leaves in (("L", left), ("R", right)):
+        for item in leaves:
+            if item.get("side") != side or int(item.get("level", 0)) != 6:
+                raise ValueError(f"region profile {side} leaves must be explicit level-6 identities")
+    left_ids = {int(item["index"]) for item in left}
+    right_ids = {int(item["index"]) for item in right}
+    pair_left = {int(item["left_id"]) for item in pairs}
+    pair_right = {int(item["right_id"]) for item in pairs}
+    if pair_left != left_ids or pair_right != right_ids or len(pair_left) != len(pairs) or len(pair_right) != len(pairs):
+        raise ValueError("region profile pair map is not a bilateral bijection over its L6 leaves")
+    return json.loads(json.dumps(profile))
+
+
+def configure_region(profile=None):
+    """Select the built-in insula preset or install one validated external region profile."""
+    global ACTIVE_REGION_PROFILE, ACTIVE_REGION_LABEL, ACTIVE_SEG_NAMES
+    global SCOPE_IDS, FULL_INS_IDS, EXPECTED_VOXELS_PER_SIDE
+    global ARM_SEGMENTS, ARM_SEGMENT_IDS, ARM_MIRROR_IDS, ARM_TYPES
+    if profile is None:
+        ACTIVE_REGION_PROFILE = None
+        ACTIVE_REGION_LABEL = "insula"
+        ACTIVE_SEG_NAMES = dict(DEFAULT_SEG_NAMES)
+        SCOPE_IDS = dict(DEFAULT_SCOPE_IDS)
+        FULL_INS_IDS = dict(DEFAULT_FULL_INS_IDS)
+        EXPECTED_VOXELS_PER_SIDE = 30256
+        ARM_SEGMENTS = DEFAULT_ARM_SEGMENTS
+        ARM_SEGMENT_IDS = {f"ARM_L6_{label_id}": side
+                           for _, label_id, side, _ in ARM_SEGMENTS}
+        ARM_MIRROR_IDS = dict(DEFAULT_ARM_MIRROR_IDS)
+        ARM_TYPES = DEFAULT_ARM_TYPES
+        return {"mode": "insula", "profile_hash": None}
+
+    resolved = _validated_profile(profile)
+    ACTIVE_REGION_PROFILE = resolved
+    selected = resolved["selected"]
+    ACTIVE_REGION_LABEL = resolved["left_node"]["abbreviation"]
+    token = re.sub(r"[^A-Za-z0-9]+", "_", ACTIVE_REGION_LABEL).strip("_") or "region"
+    profile_token = resolved["profile_hash"][:10]
+    ACTIVE_SEG_NAMES = {side: f"ARM_HIER_{token}_{side}_working_{profile_token}" for side in ("L", "R")}
+    SCOPE_IDS = {side: f"ARM_HIER_{token}_{side}_scope_{profile_token}" for side in ("L", "R")}
+    FULL_INS_IDS = {
+        "L": tuple(int(item["index"]) for item in resolved["left_leaves"]),
+        "R": tuple(int(item["index"]) for item in resolved["right_leaves"]),
+    }
+    EXPECTED_VOXELS_PER_SIDE = None
+    palette = (
+        (0.58, 0.30, 0.78), (0.20, 0.42, 0.90), (0.18, 0.68, 0.36),
+        (0.88, 0.72, 0.18), (0.86, 0.32, 0.58), (0.48, 0.56, 0.72),
+        (0.88, 0.25, 0.20), (0.55, 0.38, 0.22),
+    )
+    paired_names = {}
+    paired_colors = {}
+    for i, pair in enumerate(resolved["pair_map"]):
+        paired_names[int(pair["left_id"])] = pair["left_abbreviation"]
+        paired_names[int(pair["right_id"])] = pair["right_abbreviation"]
+        paired_colors[int(pair["left_id"])] = paired_colors[int(pair["right_id"])] = palette[i % len(palette)]
+    leaves = [*resolved["left_leaves"], *resolved["right_leaves"]]
+    ARM_SEGMENTS = tuple(
+        (paired_names[int(leaf["index"])], int(leaf["index"]), leaf["side"],
+         paired_colors[int(leaf["index"])])
+        for leaf in leaves
+    )
+    ARM_SEGMENT_IDS = {f"ARM_L6_{label_id}": side
+                       for _, label_id, side, _ in ARM_SEGMENTS}
+    ARM_MIRROR_IDS = {int(item["left_id"]): int(item["right_id"])
+                      for item in resolved["pair_map"]}
+    ARM_TYPES = tuple((name, label_id, color) for name, label_id, side, color in ARM_SEGMENTS if side == "L")
+    return {"mode": "hierarchy", "profile_hash": profile_token,
+            "region": ACTIVE_REGION_LABEL, "working_side": resolved.get("working_side", "L")}
 
 
 def configure(template_path=None, atlas_path=None, output_dir=None):
@@ -334,7 +486,11 @@ def mirrored_segment_identity(segment_id, name, side, tags=None):
             raise ValueError(f"ARM segment {segment_id!r} has unexpected name {name!r}; expected {expected_name!r}")
         if tags.get(MIRROR_HELPER_TAG) is not None:
             raise ValueError(f"official ARM segment {segment_id!r} cannot be tagged as a helper mask")
-        target_id = ARM_MIRROR_IDS.get(source_label_id) if side == "L" else source_label_id - 500
+        if side == "L":
+            target_id = ARM_MIRROR_IDS.get(source_label_id)
+        else:
+            target_id = next((left_id for left_id, right_id in ARM_MIRROR_IDS.items()
+                              if right_id == source_label_id), None)
         target_entry = next((item for item in ARM_SEGMENTS if item[1] == target_id), None)
         if target_entry is None:
             raise ValueError(f"no official ARM mirror mapping for {segment_id!r}")
@@ -368,7 +524,9 @@ def validate_input_arrays(template_array, arm_l6, template_ijk_to_ras, atlas_ijk
     counts = {label_id: int(np.count_nonzero(labels == label_id)) for label_id in required}
     missing = [label_id for label_id, count in counts.items() if count == 0]
     if missing:
-        raise ValueError(f"atlas is not ARM level-6 compatible; required source IDs are absent: {missing}")
+        label_context = ("selected hierarchy region" if ACTIVE_REGION_PROFILE is not None
+                         else "ARM level-6 atlas")
+        raise ValueError(f"{label_context} is missing required source IDs (IDs are absent): {missing}")
     template_matrix = np.asarray(template_ijk_to_ras, dtype=float)
     atlas_matrix = np.asarray(atlas_ijk_to_ras, dtype=float)
     if (template_matrix.shape != (4, 4) or atlas_matrix.shape != (4, 4)
@@ -451,8 +609,9 @@ def _resolved_inputs(template_path=None, atlas_path=None):
     return template, atlas
 
 
-def check_inputs(template_path=None, atlas_path=None, level=6):
+def check_inputs(template_path=None, atlas_path=None, level=6, region_profile=None):
     """Read-only validation used by the portable CLI and operator receipt."""
+    configure_region(region_profile)
     template_path, atlas_path = _resolved_inputs(template_path, atlas_path)
     loaded = _load_nifti_inputs(template_path, atlas_path, level=level)
     return {
@@ -469,13 +628,16 @@ def check_inputs(template_path=None, atlas_path=None, level=6):
         "level6_form": loaded["level_form"],
         "affine": loaded["template_image"].affine.tolist(),
         "level6_counts": loaded["counts"],
+        "region_profile": ACTIVE_REGION_PROFILE,
         "dry_run": True,
         "writes": [],
     }
 
 
-def prepare_level6(template_path=None, atlas_path=None, level=6, output_dir=None, dry_run=False):
+def prepare_level6(template_path=None, atlas_path=None, level=6, output_dir=None, dry_run=False,
+                   region_profile=None):
     """Extract one ARM L6 NIfTI and a receipt; preserve all input files."""
+    configure_region(region_profile)
     template_path, atlas_path = _resolved_inputs(template_path, atlas_path)
     loaded = _load_nifti_inputs(template_path, atlas_path, level=level)
     if loaded["level_form"] == "already-3D-level-6":
@@ -490,10 +652,10 @@ def prepare_level6(template_path=None, atlas_path=None, level=6, output_dir=None
             "atlas_source_shape": list(loaded["atlas_all_levels"].shape),
             "level": int(level),
             "level_form": loaded["level_form"],
-            "template_shape": list(loaded["template"].shape),
             "level6_shape": list(loaded["labels"].shape),
             "affine": loaded["atlas_image"].affine.tolist(),
             "level6_counts": loaded["counts"],
+            "region_profile": ACTIVE_REGION_PROFILE,
             "output_path": str(atlas_path),
             "dry_run": False,
             "writes": [],
@@ -516,6 +678,7 @@ def prepare_level6(template_path=None, atlas_path=None, level=6, output_dir=None
         "level6_shape": list(loaded["labels"].shape),
         "affine": loaded["atlas_image"].affine.tolist(),
         "level6_counts": loaded["counts"],
+        "region_profile": ACTIVE_REGION_PROFILE,
         "output_path": str(output_path),
         "receipt_path": str(receipt_path),
         "dry_run": bool(dry_run),
@@ -560,25 +723,37 @@ def prepare_level6(template_path=None, atlas_path=None, level=6, output_dir=None
     return receipt
 
 
-def _input_names(template_path, atlas_path):
+def _input_names(template_path, atlas_path, region_profile=None):
     template_path, atlas_path = Path(template_path).resolve(), Path(atlas_path).resolve()
     template_hash, atlas_hash = _sha256_file(template_path), _sha256_file(atlas_path)
+    profile = region_profile if region_profile is not None else ACTIVE_REGION_PROFILE
     default_pair = (template_hash == DEFAULT_TEMPLATE_SHA256
                     and atlas_hash in DEFAULT_ARM_SHA256S)
-    signature = hashlib.sha256(
+    input_signature = hashlib.sha256(
         f"{template_path}|{template_hash}|{atlas_path}|{atlas_hash}".encode("utf-8")
     ).hexdigest()[:10]
-    suffix = "" if default_pair else f"_{signature}"
-    template_name = T1_NAME if default_pair else f"NMT_template_{signature}"
-    atlas_name = ARM_NAME if default_pair else f"ARM_L6_{signature}"
+    signature = (input_signature if profile is None else hashlib.sha256(
+        f"{input_signature}|region={profile['profile_hash']}".encode("utf-8")
+    ).hexdigest()[:10])
+    suffix = "" if default_pair and profile is None else f"_{signature}"
+    template_name = T1_NAME if default_pair else f"NMT_template_{input_signature}"
+    atlas_name = ARM_NAME if default_pair else f"ARM_L6_{input_signature}"
+    if profile is None:
+        segment_names = {side: f"{name}{suffix}" for side, name in DEFAULT_SEG_NAMES.items()}
+    else:
+        token = re.sub(r"[^A-Za-z0-9]+", "_", profile["left_node"]["abbreviation"]).strip("_") or "region"
+        segment_names = {side: f"ARM_HIER_{token}_{side}_working_{signature}" for side in ("L", "R")}
     return {
         "signature": signature,
+        "input_signature": input_signature,
         "template_hash": template_hash,
         "atlas_hash": atlas_hash,
         "template_name": template_name,
         "atlas_name": atlas_name,
-        "segment_names": {side: f"{name}{suffix}" for side, name in DEFAULT_SEG_NAMES.items()},
+        "segment_names": segment_names,
         "default_pair": default_pair,
+        "region_profile": profile,
+        "region_profile_hash": profile["profile_hash"] if profile else None,
     }
 
 
@@ -630,6 +805,8 @@ def seed_arm6_segments(segmentation, arm_l6, source_volume, side):
         segment = data.GetSegment(segment_id)
         segment.SetTag("ARM.SourceLabelID", str(label_id))
         segment.SetTag("ARM.Hemisphere", label_side)
+        if ACTIVE_REGION_PROFILE is not None:
+            segment.SetTag("Insula.RegionProfileHash", ACTIVE_REGION_PROFILE["profile_hash"])
         slicer.util.updateSegmentBinaryLabelmapFromArray(
             masks[label_id].astype(np.uint8), segmentation, segment_id, source_volume)
         added.append(segment_id)
@@ -737,13 +914,23 @@ def _bind_segmentation_source(segmentation, node_name, template_path, atlas_path
         "Insula.TemplateSHA256": source_info["template_hash"],
         "Insula.ARMAtlasPath": str(Path(atlas_path).resolve()),
         "Insula.ARMAtlasSHA256": source_info["atlas_hash"],
+        "Insula.RegionProfileHash": source_info.get("region_profile_hash") or "insula-default",
+        "Insula.RegionProfile": json.dumps(source_info.get("region_profile"), sort_keys=True)
+        if source_info.get("region_profile") else "",
     }
     signature = segmentation.GetAttribute("Insula.SourceSignature")
     if signature and signature != source_info["signature"]:
         raise RuntimeError(f"{node_name} is bound to different inputs; preserve it and choose another source pair")
     if not signature and not source_info["default_pair"] and not new_node:
         raise RuntimeError(f"{node_name} has no input binding; custom inputs will not reuse it")
+    old_profile_text = segmentation.GetAttribute("Insula.RegionProfile")
+    if old_profile_text:
+        old_profile = _validated_profile(json.loads(old_profile_text))
+        if old_profile["profile_hash"] != source_info["region_profile_hash"]:
+            raise RuntimeError(f"{node_name} has conflicting hierarchy profile binding; existing node was preserved")
     for key, value in expected.items():
+        if key == "Insula.RegionProfile":
+            continue
         old = segmentation.GetAttribute(key)
         if old and old != value:
             raise RuntimeError(f"{node_name} has conflicting {key}; existing node was preserved")
@@ -833,6 +1020,17 @@ def _mirror_preflight(side, source_node=None):
     atlas_path = source.GetAttribute("Insula.ARMAtlasPath")
     atlas_hash = source.GetAttribute("Insula.ARMAtlasSHA256")
     signature = source.GetAttribute("Insula.SourceSignature")
+    profile_text = source.GetAttribute("Insula.RegionProfile")
+    source_profile = json.loads(profile_text) if profile_text else None
+    if source_profile is not None:
+        source_profile = _validated_profile(source_profile)
+        if ACTIVE_REGION_PROFILE is None or ACTIVE_REGION_PROFILE["profile_hash"] != source_profile["profile_hash"]:
+            raise ValueError("source group is bound to a different hierarchy profile; configure that exact profile before mirroring")
+    elif ACTIVE_REGION_PROFILE is not None:
+        raise ValueError("insula source group cannot be mirrored while a hierarchy profile is active")
+    expected_profile_hash = source_profile["profile_hash"] if source_profile else "insula-default"
+    if source.GetAttribute("Insula.RegionProfileHash") != expected_profile_hash:
+        raise ValueError("source group profile binding is missing or inconsistent; reload with the matching region profile")
     if not all((template_path, template_hash, atlas_path, atlas_hash, signature)):
         raise ValueError("source segmentation is missing its template/ARM input binding")
     for path, expected, label in ((template_path, template_hash, "template"),
@@ -842,7 +1040,7 @@ def _mirror_preflight(side, source_node=None):
         actual = _sha256_file(path)
         if actual != expected.upper():
             raise ValueError(f"bound {label} hash changed: expected {expected}, found {actual}")
-    source_info = _input_names(template_path, atlas_path)
+    source_info = _input_names(template_path, atlas_path, region_profile=source_profile)
     if source_info["signature"] != signature:
         raise ValueError("source segmentation binding signature does not match its input paths and hashes")
     if source.GetAttribute("Insula.TemplatePath") != str(Path(template_path).resolve()):
@@ -938,6 +1136,7 @@ def _mirror_preflight(side, source_node=None):
         "template_sha256": template_hash.upper(),
         "atlas_path": str(Path(atlas_path).resolve()),
         "atlas_sha256": atlas_hash.upper(),
+        "region_profile": source_profile,
         "reflection": {**mapping, "plane": "RAS x=0"},
         "template_symmetry": template_report,
         "atlas_symmetry": atlas_report,
@@ -996,7 +1195,9 @@ def mirror_side(side, source_node=None, dry_run=False):
             source_label_id = None
             if item["source_id"].startswith("ARM_L6_"):
                 source_id = int(item["source_id"].removeprefix("ARM_L6_"))
-                source_label_id = ARM_MIRROR_IDS[source_id] if side == "L" else source_id - 500
+                source_label_id = (ARM_MIRROR_IDS[source_id] if side == "L" else
+                                   next(left_id for left_id, right_id in ARM_MIRROR_IDS.items()
+                                        if right_id == source_id))
                 segment.SetTag("ARM.SourceLabelID", str(source_label_id))
                 segment.SetTag("ARM.Hemisphere", target_side)
             elif item["role"] == "helper_mask":
@@ -1012,7 +1213,8 @@ def mirror_side(side, source_node=None, dry_run=False):
             if item["role"] == "helper_mask":
                 candidate.GetDisplayNode().SetSegmentVisibility(segment_id, False)
         node_attrs = ("Insula.SourceSignature", "Insula.TemplatePath", "Insula.TemplateSHA256",
-                      "Insula.ARMAtlasPath", "Insula.ARMAtlasSHA256")
+                      "Insula.ARMAtlasPath", "Insula.ARMAtlasSHA256", "Insula.RegionProfileHash",
+                      "Insula.RegionProfile")
         for key in node_attrs:
             candidate.SetAttribute(key, source.GetAttribute(key))
         candidate.SetAttribute("Insula.CandidateStatus", "candidate")
@@ -1048,17 +1250,24 @@ def save_mirrored_candidate(node, path):
     return receipt
 
 
-def run(dry_run=False, refresh_scopes=False, template_path=None, atlas_path=None, output_dir=None):
+def run(dry_run=False, refresh_scopes=False, template_path=None, atlas_path=None, output_dir=None,
+        region_profile=None, working_side="L"):
     global ACTIVE_SEG_NAMES, ACTIVE_T1_NAME, ACTIVE_OUTPUT_DIR
+    if region_profile is not None:
+        configure_region(region_profile)
+    working_side = str(working_side).upper()
+    if working_side not in ("L", "R"):
+        raise ValueError("working_side must be L or R")
     template_path, atlas_path = _resolved_inputs(template_path, atlas_path)
     ACTIVE_OUTPUT_DIR = (Path(output_dir).expanduser().resolve() if output_dir
                          else OUTPUT_DIR)
     for path in (template_path, atlas_path):
         if not path.is_file():
             raise FileNotFoundError(path)
-    source_info = _input_names(template_path, atlas_path)
+    source_info = _input_names(template_path, atlas_path, region_profile=ACTIVE_REGION_PROFILE)
     print(f"Template      : {template_path}")
-    print(f"ARM L6 atlas  : {atlas_path} (all 16 ARM L6 IDs required)")
+    print(f"ARM L6 atlas  : {atlas_path} ({'all 16 ARM L6 IDs required' if ACTIVE_REGION_PROFILE is None else str(sum(len(FULL_INS_IDS[s]) for s in ('L','R'))) + ' selected L6 leaves required'})")
+    print(f"region        : {ACTIVE_REGION_LABEL} ({'insula preset' if ACTIVE_REGION_PROFILE is None else ACTIVE_REGION_PROFILE['profile_hash'][:12]})")
     print(f"scope IDs     : {FULL_INS_IDS}")
     print(f"scene nodes   : {source_info['segment_names']}")
     print(f"output folder : {ACTIVE_OUTPUT_DIR}")
@@ -1078,8 +1287,9 @@ def run(dry_run=False, refresh_scopes=False, template_path=None, atlas_path=None
     masks = build_scope_masks(arm_l6)
     for side, mask in masks.items():
         count = int(mask.sum())
-        if count == 0 or (source_info["default_pair"] and count != EXPECTED_VOXELS_PER_SIDE):
-            raise RuntimeError(f"{side} full-insula count {count}, expected {EXPECTED_VOXELS_PER_SIDE}")
+        if count == 0 or (ACTIVE_REGION_PROFILE is None and source_info["default_pair"]
+                          and count != EXPECTED_VOXELS_PER_SIDE):
+            raise RuntimeError(f"{side} scope count {count}, expected {EXPECTED_VOXELS_PER_SIDE if ACTIVE_REGION_PROFILE is None else 'nonzero'}")
 
     # Preflight existing nodes before adding or changing either hemisphere.
     for side, node_name in source_info["segment_names"].items():
@@ -1090,6 +1300,10 @@ def run(dry_run=False, refresh_scopes=False, template_path=None, atlas_path=None
                 raise RuntimeError(f"{node_name} is already bound to different source files")
             if not signature and not source_info["default_pair"]:
                 raise RuntimeError(f"{node_name} is unbound; custom inputs will not reuse it")
+            bound_profile = existing.GetAttribute("Insula.RegionProfileHash")
+            expected_profile = source_info["region_profile_hash"] or "insula-default"
+            if bound_profile and bound_profile != expected_profile:
+                raise RuntimeError(f"{node_name} is bound to a different region profile; existing edits were preserved")
 
     ACTIVE_SEG_NAMES = dict(source_info["segment_names"])
     ACTIVE_T1_NAME = source_info["template_name"]
@@ -1118,7 +1332,9 @@ def run(dry_run=False, refresh_scopes=False, template_path=None, atlas_path=None
                 slicer.util.updateSegmentBinaryLabelmapFromArray(
                     masks[side].astype(np.uint8), segmentation, scope_id, arm)
         data.GetSegment(scope_id).SetColor(*SCOPE_COLORS[side])
-        segmentation.GetDisplayNode().SetSegmentVisibility(scope_id, True)
+        if ACTIVE_REGION_PROFILE is not None:
+            data.GetSegment(scope_id).SetTag("Insula.RegionProfileHash", ACTIVE_REGION_PROFILE["profile_hash"])
+        segmentation.GetDisplayNode().SetSegmentVisibility(scope_id, False)
         seeded = seed_arm6_segments(segmentation, arm_l6, arm, side)
         segmentations[side] = segmentation
         side_counts = {name: label_counts[label_id] for name, label_id, label_side, _ in ARM_SEGMENTS
@@ -1128,15 +1344,19 @@ def run(dry_run=False, refresh_scopes=False, template_path=None, atlas_path=None
     slicer.util.setSliceViewerLayers(background=ref, label=arm, labelOpacity=0.35)
     ref.GetDisplayNode().AutoWindowLevelOn()
     slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
-    slicer.modules.markups.logic().JumpSlicesToLocation(-18.0, 18.5, 14.9, True)
+    voxels_kji = np.argwhere(masks[working_side])
+    center_kji = voxels_kji.mean(axis=0)
+    center_ijk = np.asarray([center_kji[2], center_kji[1], center_kji[0], 1.0])
+    focus_ras = tuple((_node_geometry_matrix(ref) @ center_ijk)[:3].tolist())
+    slicer.modules.markups.logic().JumpSlicesToLocation(*focus_ras, True)
     slicer.util.selectModule("SegmentEditor")
     editor = slicer.modules.segmenteditor.widgetRepresentation().self().editor
-    editor.setSegmentationNode(segmentations["L"])
+    editor.setSegmentationNode(segmentations[working_side])
     editor.setSourceVolumeNode(ref)
     editor.mrmlSegmentEditorNode().SetSelectedSegmentID("")
     editor.mrmlSegmentEditorNode().SetActiveEffectName("")
-    print("Ready: separate left/right scope+ARM L6 nodes are available.")
-    print("Example: print(use_scope('L', 'CL_Ia/Id'))  # or 'ARM_L6_228'; R uses CR_/right IDs")
+    print(f"Ready: separate left/right {ACTIVE_REGION_LABEL} scope+ARM L6 nodes are available; active side={working_side}.")
+    print("Example: print(use_scope('L', 'CL_Ia/Id'))  # or 'ARM_L6_228'; R uses its explicit counterpart IDs")
     print("Previous combined nodes are left unchanged; manual edits are not migrated.")
     print("ARM.SourceLabelID tags record source IDs; they do not guarantee exported NIfTI values.")
     return segmentations
@@ -1200,9 +1420,10 @@ def show_atlas_setup_help(parent=None):
 
 def show_gui():
     """Show the small input/side/parcel workflow inside 3D Slicer."""
-    global INSULA_GUI
+    global INSULA_GUI, PENDING_GUI_PROFILE
     _require_slicer()
     import qt
+    PENDING_GUI_PROFILE = None
 
     if "INSULA_GUI" in globals():
         try:
@@ -1247,12 +1468,145 @@ def show_gui():
 
     template_edit = file_row(REF_PATH, "Template intensity volume:")
     atlas_edit = file_row(ARM_PATH, "ARM L6 label volume:")
+
+    region_mode = qt.QComboBox(dialog)
+    region_mode.setObjectName("RegionGroupMode")
+    region_mode.addItems(["Insula preset", "ARM hierarchy"])
+    form.addRow("Region group:", region_mode)
+    hierarchy_row = qt.QWidget(dialog)
+    hierarchy_layout = qt.QHBoxLayout(hierarchy_row)
+    hierarchy_layout.setContentsMargins(0, 0, 0, 0)
+    hierarchy_edit = qt.QLineEdit(str(HIERARCHY_PATH or _discover_hierarchy_path(ARM_PATH) or ""), hierarchy_row)
+    hierarchy_edit.setObjectName("ARMHierarchyCSVPath")
+    hierarchy_browse = qt.QPushButton("Browse…", hierarchy_row)
+    hierarchy_layout.addWidget(hierarchy_edit)
+    hierarchy_layout.addWidget(hierarchy_browse)
+    form.addRow("ARM hierarchy CSV:", hierarchy_row)
+    search_row = qt.QWidget(dialog)
+    search_layout = qt.QHBoxLayout(search_row)
+    search_layout.setContentsMargins(0, 0, 0, 0)
+    search_edit = qt.QLineEdit(search_row)
+    search_edit.setObjectName("ARMHierarchySearch")
+    search_edit.setPlaceholderText("Search name, abbreviation, or exact numeric index")
+    search_side = qt.QComboBox(search_row)
+    search_side.addItems(["Both", "L", "R"])
+    search_level = qt.QComboBox(search_row)
+    search_level.addItems(["Any level", "1", "2", "3", "4", "5", "6"])
+    search_button = qt.QPushButton("Search", search_row)
+    search_layout.addWidget(search_edit, 3)
+    search_layout.addWidget(search_side)
+    search_layout.addWidget(search_level)
+    search_layout.addWidget(search_button)
+    form.addRow("Find ARM region:", search_row)
+    hierarchy_results = qt.QComboBox(dialog)
+    hierarchy_results.setObjectName("ARMHierarchyResults")
+    form.addRow("Search results:", hierarchy_results)
+    use_region_button = qt.QPushButton("Use selected region (pending)", dialog)
+    form.addRow(use_region_button)
+    region_preview = qt.QLabel("Insula preset is selected. Hierarchy search does not change the scene.", dialog)
+    region_preview.setWordWrap(True)
+    region_preview.setObjectName("ARMHierarchyProfilePreview")
+    form.addRow("Region preview:", region_preview)
+
+    side_combo = qt.QComboBox(dialog)
+    side_combo.addItems(["L", "R"])
+    side_combo.setObjectName("WorkingHemisphere")
+    form.addRow("Working hemisphere:", side_combo)
+
+    def choose_hierarchy_file():
+        current = hierarchy_edit.text or str(Path.cwd())
+        result = qt.QFileDialog.getOpenFileName(dialog, "Choose ARM_key_table.csv", current,
+                                                "CSV tables (*.csv);;All files (*)")
+        path = result[0] if isinstance(result, (tuple, list)) else result
+        if path:
+            hierarchy_edit.setText(path)
+    hierarchy_browse.connect("clicked()", choose_hierarchy_file)
+
+    def find_hierarchy():
+        try:
+            selected_path = hierarchy_edit.text.strip() or str(_discover_hierarchy_path(atlas_edit.text) or "")
+            resolver_type, table_path = _load_hierarchy_class(selected_path or None)
+            if not hierarchy_edit.text.strip():
+                hierarchy_edit.setText(str(table_path))
+            resolver = resolver_type.from_file(table_path)
+            side_filter = search_side.currentText if search_side.currentText != "Both" else None
+            level_filter = None if search_level.currentText == "Any level" else int(search_level.currentText)
+            hits = resolver.search(search_edit.text, side=side_filter, level=level_filter)
+            hierarchy_results.clear()
+            for hit in hits:
+                label = (f"L{hit['level']} index {hit['index']} | {hit['abbreviation']} | "
+                         f"{hit['full_name']} | {hit['descendant_count']} L6 leaves: "
+                         f"{','.join(map(str, hit['descendant_ids']))}")
+                hierarchy_results.addItem(label, hit)
+            if not hits:
+                region_preview.setText("No matches. Refine the query or side/level filter.")
+            else:
+                region_preview.setText(f"{len(hits)} candidates found. Select one result, then use it explicitly.")
+        except Exception as exc:
+            hierarchy_results.clear()
+            region_preview.setText(f"Hierarchy search failed: {exc}")
+            qt.QMessageBox.warning(dialog, "ARM hierarchy search failed", str(exc))
+
+    def choose_region_profile():
+        global PENDING_GUI_PROFILE
+        try:
+            set_ready(False)
+            if region_mode.currentIndex == 0:
+                PENDING_GUI_PROFILE = None
+                region_preview.setText("Insula preset selected. Its historical bilateral 8-label groups will load.")
+            else:
+                hit = hierarchy_results.itemData(hierarchy_results.currentIndex)
+                if not hit:
+                    raise ValueError("select one hierarchy search result first")
+                resolver_type, table_path = _load_hierarchy_class(hierarchy_edit.text.strip() or None)
+                resolver = resolver_type.from_file(table_path)
+                PENDING_GUI_PROFILE = resolver.profile_for(
+                    hit["index"], hit["level"], hit["side"], namespace=hit["namespace"])
+                profile = _validated_profile(PENDING_GUI_PROFILE)
+                side_combo.setCurrentIndex(0 if profile["working_side"] == "L" else 1)
+                left_ids = [str(item["index"]) for item in profile["left_leaves"]]
+                right_ids = [str(item["index"]) for item in profile["right_leaves"]]
+                region_preview.setText(
+                    f"Pending {profile['selected']['abbreviation']} L{profile['selected']['level']} "
+                    f"({profile['selected']['full_name']}); left {len(left_ids)} L6 IDs: {','.join(left_ids)}; "
+                    f"right {len(right_ids)} L6 IDs: {','.join(right_ids)}. No scene nodes changed.")
+            status.setText("Pending region settings changed. Validate and load groups to apply them.")
+        except Exception as exc:
+            region_preview.setText(f"Region not selected: {exc}")
+            qt.QMessageBox.warning(dialog, "Region not selected", str(exc))
+
+    search_button.connect("clicked()", find_hierarchy)
+    use_region_button.connect("clicked()", choose_region_profile)
+    def mode_changed(*_):
+        global PENDING_GUI_PROFILE
+        PENDING_GUI_PROFILE = None
+        set_ready(False)
+        if region_mode.currentIndex == 0:
+            region_preview.setText("Insula preset selected. Its historical bilateral groups will load.")
+        else:
+            region_preview.setText("Search the external ARM hierarchy table, choose one result, then use it explicitly.")
+        status.setText("Region mode changed. Validate and load groups to apply the pending settings.")
+    region_mode.currentIndexChanged.connect(mode_changed)
+    def hierarchy_changed(*_):
+        global PENDING_GUI_PROFILE
+        PENDING_GUI_PROFILE = None
+        hierarchy_results.clear()
+        set_ready(False)
+        region_preview.setText("Hierarchy table changed. Search and use a new explicit result before loading.")
+        status.setText("Hierarchy table changed. Validate and load again before editing.")
+    hierarchy_edit.textChanged.connect(hierarchy_changed)
+    search_enable = lambda enabled: [widget.setEnabled(enabled) for widget in
+                                     (hierarchy_edit, hierarchy_browse, search_edit,
+                                      search_side, search_level, search_button,
+                                      hierarchy_results, use_region_button)]
+    region_mode.currentIndexChanged.connect(lambda *_: search_enable(region_mode.currentIndex == 1))
+    search_enable(False)
     guidance = qt.QLabel(
         "Guidance\n"
         "1. Choose a 3-D template and ARM level-6 compatible label map. "
-        "All 16 ARM L6 IDs are required; names and hemisphere are interpreted from those IDs.\n"
+        "The insula preset requires its 16 ARM L6 IDs; hierarchy mode requires only the selected region's bilateral L6 leaves.\n"
         "2. Load checks that both files have matching image grids. Nothing is resampled.\n"
-        "3. Select L/R and a seed, apply its full-insula scope, then choose Paint. "
+        "3. Select a working hemisphere and seed, apply its selected-region scope, then choose Paint. "
         "Visible donor seeds transfer voxels; hidden siblings can overlap, which the mirror check rejects.\n"
         "4. Finish one side, then Mirror selected side (new candidate) and Save mirrored candidate. "
         "Both working groups are preserved.", dialog)
@@ -1261,14 +1615,11 @@ def show_gui():
 
     load_button = qt.QPushButton("Validate inputs and load groups", dialog)
     form.addRow(load_button)
-    side_combo = qt.QComboBox(dialog)
-    side_combo.addItems(["L", "R"])
     parcel_combo = qt.QComboBox(dialog)
     refresh_button = qt.QPushButton("Refresh parcel list", dialog)
     select_row = qt.QWidget(dialog)
     select_layout = qt.QHBoxLayout(select_row)
     select_layout.setContentsMargins(0, 0, 0, 0)
-    select_layout.addWidget(side_combo)
     select_layout.addWidget(parcel_combo)
     select_layout.addWidget(refresh_button)
     form.addRow("Editing group / seed:", select_row)
@@ -1288,12 +1639,18 @@ def show_gui():
     mirror_layout.addWidget(mirror_button)
     mirror_layout.addWidget(save_mirror_button)
     form.addRow(mirror_row)
+    direction = qt.QLabel("L → R", dialog)
+    direction.setObjectName("MirrorDirection")
+    form.addRow("Candidate direction:", direction)
     status = qt.QLabel("Choose inputs, then validate and load. Opening this panel does not change the scene.", dialog)
     status.setWordWrap(True)
     form.addRow("Status:", status)
 
+    gui_ready = False
     def set_ready(ready):
-        side_combo.setEnabled(ready)
+        nonlocal gui_ready
+        gui_ready = bool(ready)
+        side_combo.setEnabled(True)
         parcel_combo.setEnabled(ready)
         refresh_button.setEnabled(ready)
         apply_button.setEnabled(ready)
@@ -1322,8 +1679,13 @@ def show_gui():
     def load_groups():
         set_ready(False)
         try:
+            if region_mode.currentIndex == 1 and PENDING_GUI_PROFILE is None:
+                raise ValueError("search for a hierarchy region and use one explicit result before loading")
+            configure_region(PENDING_GUI_PROFILE)
             loaded = run(template_path=template_edit.text, atlas_path=atlas_edit.text,
-                          output_dir=ACTIVE_OUTPUT_DIR)
+                          output_dir=ACTIVE_OUTPUT_DIR,
+                          region_profile=PENDING_GUI_PROFILE,
+                          working_side=side_combo.currentText)
             if not loaded:
                 raise RuntimeError("input groups were not loaded")
             refresh_parcels()
@@ -1406,7 +1768,21 @@ def show_gui():
 
     template_edit.textChanged.connect(invalidate)
     atlas_edit.textChanged.connect(invalidate)
-    side_combo.currentIndexChanged.connect(refresh_parcels)
+    def focus_working_side(*_):
+        direction.setText(f"{side_combo.currentText} → {'R' if side_combo.currentText == 'L' else 'L'}")
+        if not gui_ready:
+            return
+        refresh_parcels()
+        if not _has_slicer_scene():
+            return
+        segmentation = _find(ACTIVE_SEG_NAMES[side_combo.currentText])
+        if segmentation is not None:
+            editor = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+            editor.setSegmentationNode(segmentation)
+            editor.setSourceVolumeNode(_find(ACTIVE_T1_NAME))
+            editor.mrmlSegmentEditorNode().SetSelectedSegmentID("")
+            editor.mrmlSegmentEditorNode().SetActiveEffectName("")
+    side_combo.currentIndexChanged.connect(focus_working_side)
     load_button.connect("clicked()", load_groups)
     refresh_button.connect("clicked()", refresh_parcels)
     apply_button.connect("clicked()", apply_restriction)
@@ -1430,25 +1806,71 @@ def _build_cli_parser():
     check.add_argument("--template", default=str(REF_PATH) if REF_PATH else None)
     check.add_argument("--atlas", default=str(ARM_PATH) if ARM_PATH else None)
     check.add_argument("--level", type=int, choices=(6,), default=6)
+    check.add_argument("--hierarchy", help="external ARM_key_table.csv for an explicit region profile")
+    check.add_argument("--region", help="exact numeric hierarchy index or exact abbreviation")
+    check.add_argument("--region-level", type=int, choices=range(1, 7))
+    check.add_argument("--side", choices=("L", "R"), default="L")
     check.add_argument("--dry-run", action="store_true", help="print resolved validation receipt; always read-only")
     prepare = commands.add_parser("prepare", help="extract explicit ARM level 6 from a 3/4/5-D NIfTI")
     prepare.add_argument("--template", default=str(REF_PATH) if REF_PATH else None)
     prepare.add_argument("--atlas", default=str(ARM_PATH) if ARM_PATH else None)
     prepare.add_argument("--level", type=int, choices=(6,), required=True)
+    prepare.add_argument("--hierarchy", help="external ARM_key_table.csv for an explicit region profile")
+    prepare.add_argument("--region", help="exact numeric hierarchy index or exact abbreviation")
+    prepare.add_argument("--region-level", type=int, choices=range(1, 7))
+    prepare.add_argument("--side", choices=("L", "R"), default="L")
     prepare.add_argument("--output-dir", default=str(OUTPUT_DIR))
     prepare.add_argument("--dry-run", action="store_true", help="report outputs without writing files")
+    search = commands.add_parser("search", help="read-only search of the external ARM hierarchy table")
+    search.add_argument("--hierarchy", help="ARM_key_table.csv (or ARMINS_HIERARCHY)")
+    search.add_argument("--query", required=True, help="name/abbreviation substring or exact numeric index")
+    search.add_argument("--side", choices=("L", "R"), help="optional hemisphere filter")
+    search.add_argument("--level", type=int, choices=range(1, 7), help="optional hierarchy-level filter")
+    search.add_argument("--dry-run", action="store_true", help="explicitly confirm read-only search")
     commands.add_parser("gui", help="open the editor inside 3D Slicer")
     return parser
+
+
+def _cli_region_profile(hierarchy_path, region, level, side):
+    if not region:
+        if level is not None:
+            raise ValueError("--region-level requires --region")
+        if hierarchy_path:
+            raise ValueError("--hierarchy with check/prepare requires --region; use `search` to explore candidates")
+        return None
+    if level is None:
+        raise ValueError("--region-level is required with --region; use `search` to choose a level")
+    resolver_type, path = _load_hierarchy_class(hierarchy_path)
+    resolver = resolver_type.from_file(path)
+    return resolver.resolve(region, side=side, level=level)
 
 
 def main(argv=None):
     parser = _build_cli_parser()
     args = parser.parse_args(argv)
     if args.command == "check":
-        result = check_inputs(args.template, args.atlas, level=args.level)
+        profile = _cli_region_profile(args.hierarchy, args.region, args.region_level, args.side)
+        result = check_inputs(args.template, args.atlas, level=args.level, region_profile=profile)
     elif args.command == "prepare":
+        profile = _cli_region_profile(args.hierarchy, args.region, args.region_level, args.side)
         result = prepare_level6(args.template, args.atlas, level=args.level,
-                                output_dir=args.output_dir, dry_run=args.dry_run)
+                                output_dir=args.output_dir, dry_run=args.dry_run,
+                                region_profile=profile)
+    elif args.command == "search":
+        resolver_type, path = _load_hierarchy_class(args.hierarchy)
+        resolver = resolver_type.from_file(path)
+        result = {
+            **_runtime_provenance(),
+            "status": "read-only-search",
+            "hierarchy_path": str(resolver.path),
+            "hierarchy_sha256": resolver.source_sha256,
+            "query": args.query,
+            "side": args.side,
+            "level": args.level,
+            "matches": resolver.search(args.query, side=args.side, level=args.level),
+            "dry_run": True,
+            "writes": [],
+        }
     elif args.command == "gui":
         show_gui()
         return 0

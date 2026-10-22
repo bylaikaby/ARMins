@@ -1,6 +1,6 @@
 """Synthetic tests for ARMins exact-grid mirror preflight.
 
-Version: 0.6.0 (local/unreleased)
+Version: 0.7.0 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: candidate

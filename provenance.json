@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
   "recorded_date": "2026-10-22",
-  "tool_version": "0.6.0 (local/unreleased)",
+  "tool_version": "0.7.0 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -32,20 +32,20 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "21a0381cb52f25847441b66fdf9c20401305e78e9eb5a3b1ec9be22756268e2d",
-      "bytes": 9848,
-      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+      "sha256": "381a197569445b574c1c89f2e498e7d97bd0f3630c465798a4d3498ed3e1f87d",
+      "bytes": 23016,
+      "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "5ad1c8fd1a0af91911c10465aed7f184a34ba8c2b49d4e7f7232c4530ae9a78e",
-      "bytes": 72083,
-      "inputs": "Registered baseline and standalone changes"
+      "sha256": "bc9afc7333b0a9cafe89330a49c1f8248eb74abc76226b5032adeb900fb5b186",
+      "bytes": 96610,
+      "inputs": "Published 0.6.0 baseline plus profile-aware GUI/CLI, selected hemisphere focus and explicit correspondence integration."
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "34c98e64e340e95a1191794fdf536180f700f1fb713c1e1576fecf685bfe1eda",
-      "bytes": 1501,
+      "sha256": "5733f83ccd0b54a7ce62e777bfb7b7e08a148f31c28414155f037db0d465c8b3",
+      "bytes": 2661,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,39 +74,63 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "3a44582d484a46e8fcf905bb71822cda610cf673ec977c9f6423eda8c3cf4adb",
-      "bytes": 2753,
-      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+      "sha256": "dc4ea15c181cf0e4efd2b2049c02a4c7275e3708ebde4f303348ce8358b29706",
+      "bytes": 5486,
+      "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
       "sha256": "9e686d6838ed45f34507b09520e801e7e88332fd4167b1a649657170b2658b20",
       "bytes": 45564,
-      "inputs": "Native design phase, Slicer 5.12.0, armins.py hash recorded below; public help text only"
+      "inputs": "Actual setup-help dialog from Slicer 5.12.0; rechecked with 0.7.0 (identical pixels to original capture)."
     },
     "tests/test_editor.py": {
       "purpose": "Synthetic scope/input/editor compatibility regression tests.",
-      "sha256": "f4df44566e867825d59679b61c1a216e5cb0f528572ba09be21230c1a98cf584",
+      "sha256": "696111f0dae3d02324e6e95c24b0adec97846bf04ec66ba0efd1fb2ef71be6f9",
       "bytes": 12375,
       "inputs": "Registered baseline and standalone changes"
     },
     "tests/test_mirroring.py": {
       "purpose": "Synthetic reflection, identity, partition and failure-case tests.",
-      "sha256": "1a3cb9ef779cb0ff24dd4993b88007644feeebf8bdbb27a325bf985761279f5b",
+      "sha256": "1cde9bf9f881a36fd717c30029bb71f5d948ded9af3c62dbd19fb694c34d898f",
       "bytes": 8388,
       "inputs": "Registered baseline and standalone changes"
     },
     "tests/test_preparation.py": {
       "purpose": "Synthetic NIfTI/CLI preparation, provenance and non-overwrite tests.",
-      "sha256": "9836b07ab3faeb5f42bd92856ad1f1776cab74ae640acb75231a7245f3997526",
-      "bytes": 11187,
+      "sha256": "011d2589d7df25b54a76f4e32b3949fa598a989c50a41325755c6012ed073b19",
+      "bytes": 11194,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
-      "sha256": "27f84d8dc4a01175ddf990abab9108625d3e1ae2feae193e3f2bee83d36c1995",
-      "bytes": 13056,
+      "sha256": "9eabfcbcabbb72fa617ced12c21b12bf5ceed415b81e3a2e5f1128bd621e957d",
+      "bytes": 28773,
       "inputs": "Registered baseline and standalone changes"
+    },
+    "arm_hierarchy.py": {
+      "purpose": "Standalone stdlib explicit ARM parent search, descendant resolution and bilateral profile construction.",
+      "inputs": "External provider ARM_key_table.csv; earlier explicit-hierarchy and subtree-query contracts adapted without runtime dependency.",
+      "sha256": "73a6d7221ac146494525157d31881b94f430fed6efa01df8e77054a240e6c938",
+      "bytes": 15515
+    },
+    "tests/test_hierarchy.py": {
+      "purpose": "Synthetic hierarchy schema, identity, namespace, exact numeric search, descendants and explicit non-offset pairing tests.",
+      "inputs": "Synthetic CSV fixtures created within tests; no provider table bundled.",
+      "sha256": "e3f700d673443224b7a41da5aaa1e9779986c80e813e28f5b83cba6cf5bb4d25",
+      "bytes": 8967
+    },
+    "tests/test_hierarchy_integration.py": {
+      "purpose": "Synthetic region-context isolation, explicit pair mapping and unrelated-working-directory CLI tests.",
+      "inputs": "Synthetic bilateral hierarchy fixtures.",
+      "sha256": "c2062828b7a5c36b5e564a22afd772cd57c3996630e6e4d17530175982eefba5",
+      "bytes": 4307
+    },
+    "docs/editor.png": {
+      "purpose": "Privacy-reviewed native 0.7.0 editor controls for the complete README guide.",
+      "inputs": "Actual Slicer 5.12.0 design phase before inputs are selected; no private paths or annotations.",
+      "sha256": "63b48ed688968e630fe6cb77e1dc0f052d6554254c0bffd212d0b51dff2e13ae",
+      "bytes": 74988
     }
   },
   "manifest_self": {
@@ -154,149 +178,266 @@
     }
   ],
   "validation": {
-    "tested_module_sha256": "5ad1c8fd1a0af91911c10465aed7f184a34ba8c2b49d4e7f7232c4530ae9a78e",
+    "tested_module_sha256": "bc9afc7333b0a9cafe89330a49c1f8248eb74abc76226b5032adeb900fb5b186",
     "synthetic_tests": {
       "command": "python -m unittest discover -s tests -p \"test_*.py\" -v",
-      "passed": 34,
+      "passed": 49,
       "failed": 0,
       "python": "3.10.20",
       "numpy": "1.26.4",
-      "nibabel": "5.4.2"
+      "nibabel": "5.4.2",
+      "count_policy": "Distinct tests only; an intermediate imported-TestCase duplicate discovery was removed."
     },
     "native_slicer": {
       "version": "5.12.0",
       "python": "3.12.10",
       "numpy": "2.4.6",
-      "status": "passed",
+      "tested_loader_sha256": "bc9afc7333b0a9cafe89330a49c1f8248eb74abc76226b5032adeb900fb5b186",
       "design_checks": [
         "setup help opens without scene changes and exposes official links and copyable install command",
         "actual native dialog contains both mirror controls; screenshot saved"
       ],
-      "behavior_checks": [
-        "dry run validates actual edited data without changing scene or source masks",
-        "all ARM IDs and custom child mirror exactly across KJI axis 2",
-        "both existing working side nodes remain byte-for-byte equal as arrays",
-        "right-to-left reflection restores every edited source voxel and parcel ID",
-        "saved native .seg.nrrd reloads with every segment and voxel unchanged",
-        "mirror provenance survives .seg.nrrd reload as a scope-segment tag",
-        "arbitrary source annotation metadata survives mirroring and native save/reload",
-        "existing mirror output is refused without overwrite",
-        "native Validate and Mirror button signals create a new candidate and enable saving",
-        "overlap with another seed is rejected before creating any candidate",
-        "registered source image and atlas hashes remain unchanged"
-      ],
-      "reflection": {
-        "plane": "RAS x=0",
-        "ijk_axis": 0,
-        "numpy_axis": 2,
-        "shape_kji": [
-          200,
-          312,
-          256
+      "design_visually_reviewed_before_behavior": true,
+      "insula": {
+        "status": "passed",
+        "checks": [
+          "dry run validates actual edited data without changing scene or source masks",
+          "all ARM IDs and custom child mirror exactly across KJI axis 2",
+          "both existing working side nodes remain byte-for-byte equal as arrays",
+          "right-to-left reflection restores every edited source voxel and parcel ID",
+          "saved native .seg.nrrd reloads with every segment and voxel unchanged",
+          "mirror provenance survives .seg.nrrd reload as a scope-segment tag",
+          "arbitrary source annotation metadata survives mirroring and native save/reload",
+          "existing mirror output is refused without overwrite",
+          "native Validate and Mirror button signals create a new candidate and enable saving",
+          "overlap with another seed is rejected before creating any candidate",
+          "registered source image and atlas hashes remain unchanged"
         ],
-        "voxel_index_matrix": [
-          [
-            -1,
-            0,
-            0,
-            255
+        "reflection": {
+          "plane": "RAS x=0",
+          "ijk_axis": 0,
+          "numpy_axis": 2,
+          "shape_kji": [
+            200,
+            312,
+            256
           ],
-          [
-            0,
-            1,
-            0,
-            0
-          ],
-          [
-            0,
-            0,
-            1,
-            0
-          ],
-          [
-            0,
-            0,
-            0,
-            1
+          "voxel_index_matrix": [
+            [
+              -1,
+              0,
+              0,
+              255
+            ],
+            [
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ]
           ]
-        ]
+        },
+        "template_symmetry": {
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "voxels_over_tolerance": 0,
+          "atol": 1e-05
+        },
+        "atlas_symmetry": {
+          "scope_mismatch_voxels": 0,
+          "pairs": [
+            {
+              "left_id": 39,
+              "right_id": 539,
+              "mismatch_voxels": 0
+            },
+            {
+              "left_id": 41,
+              "right_id": 541,
+              "mismatch_voxels": 0
+            },
+            {
+              "left_id": 42,
+              "right_id": 542,
+              "mismatch_voxels": 0
+            },
+            {
+              "left_id": 43,
+              "right_id": 543,
+              "mismatch_voxels": 0
+            },
+            {
+              "left_id": 226,
+              "right_id": 726,
+              "mismatch_voxels": 0
+            },
+            {
+              "left_id": 228,
+              "right_id": 728,
+              "mismatch_voxels": 0
+            },
+            {
+              "left_id": 229,
+              "right_id": 729,
+              "mismatch_voxels": 0
+            },
+            {
+              "left_id": 230,
+              "right_id": 730,
+              "mismatch_voxels": 0
+            }
+          ]
+        },
+        "partition": {
+          "scope_voxels": 30256,
+          "parcel_union_voxels": 30256,
+          "gap_voxels": 0,
+          "overlap_voxels": 0,
+          "leak_voxels": 0,
+          "overlap_pairs": []
+        },
+        "candidate_mismatches": {
+          "R-INS-scope": 0,
+          "ARM_L6_539": 0,
+          "ARM_L6_541": 0,
+          "ARM_L6_542": 0,
+          "ARM_L6_543": 0,
+          "ARM_L6_726": 0,
+          "ARM_L6_728": 0,
+          "ARM_L6_729": 0,
+          "ARM_L6_730": 0,
+          "R-mirror-test-child": 0
+        },
+        "executed_harness_sha256": "7679846f67b7599491c004cadf4de9bcba9c28ea5e664c1a2cc4be1c9cd59196"
       },
-      "template_symmetry": {
-        "max_abs_difference": 0.0,
-        "rms_difference": 0.0,
-        "voxels_over_tolerance": 0,
-        "atol": 1e-05
+      "hierarchy_ACC": {
+        "status": "passed",
+        "checks": [
+          "real ARM CSV resolves ACC L3 to five explicit bilateral leaves with stable paired profile identity",
+          "preloaded insula groups and Segment Editor state captured before hierarchy selection",
+          "GUI hierarchy search and pending selection do not mutate MRML scene",
+          "hierarchy GUI load creates both five-leaf groups, keeps scope geometry, and initially focuses the selected left group",
+          "paired right-side selection reuses the same groups and focuses the right working group",
+          "mirror uses the CSV-derived bilateral ID map; tagged helper is excluded from partition, hidden, and preserved",
+          "right-to-left hierarchy mirror round-trips every selected L6 leaf and helper mask",
+          "hierarchy candidate save/reload retains the profile receipt and helper annotation",
+          "native hierarchy mirror button creates a separate candidate and enables candidate saving",
+          "hierarchy mirroring leaves pre-existing insula working groups and Segment Editor references/mask/effect unchanged",
+          "registered template, atlas, and hierarchy CSV hashes are unchanged"
+        ],
+        "selected_parent": {
+          "level": 3,
+          "left_index": 3,
+          "left_abbreviation": "CL_ACC",
+          "right_index": 503,
+          "right_abbreviation": "CR_ACC"
+        },
+        "left_L6_ids": [
+          4,
+          5,
+          8,
+          9,
+          10
+        ],
+        "right_L6_ids": [
+          504,
+          505,
+          508,
+          509,
+          510
+        ],
+        "partition": {
+          "gap_voxels": 0,
+          "leak_voxels": 0,
+          "overlap_pairs": [],
+          "overlap_voxels": 0,
+          "parcel_union_voxels": 26521,
+          "scope_voxels": 26521
+        },
+        "atlas_symmetry": {
+          "pairs": [
+            {
+              "left_id": 4,
+              "mismatch_voxels": 0,
+              "right_id": 504
+            },
+            {
+              "left_id": 5,
+              "mismatch_voxels": 0,
+              "right_id": 505
+            },
+            {
+              "left_id": 8,
+              "mismatch_voxels": 0,
+              "right_id": 508
+            },
+            {
+              "left_id": 9,
+              "mismatch_voxels": 0,
+              "right_id": 509
+            },
+            {
+              "left_id": 10,
+              "mismatch_voxels": 0,
+              "right_id": 510
+            }
+          ],
+          "scope_mismatch_voxels": 0
+        },
+        "reflection": {
+          "ijk_axis": 0,
+          "numpy_axis": 2,
+          "plane": "RAS x=0",
+          "shape_kji": [
+            200,
+            312,
+            256
+          ],
+          "voxel_index_matrix": [
+            [
+              -1,
+              0,
+              0,
+              255
+            ],
+            [
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ]
+          ]
+        },
+        "saved_candidate_bytes": 68801,
+        "saved_candidate_sha256": "553c475e6fc981a725cbeb16900a44a82595f2b2fa4943a79027a7cacbe1ece0",
+        "outputs_distributed": false,
+        "executed_harness_sha256": "9eabfcbcabbb72fa617ced12c21b12bf5ceed415b81e3a2e5f1128bd621e957d"
       },
-      "atlas_symmetry": {
-        "scope_mismatch_voxels": 0,
-        "pairs": [
-          {
-            "left_id": 39,
-            "right_id": 539,
-            "mismatch_voxels": 0
-          },
-          {
-            "left_id": 41,
-            "right_id": 541,
-            "mismatch_voxels": 0
-          },
-          {
-            "left_id": 42,
-            "right_id": 542,
-            "mismatch_voxels": 0
-          },
-          {
-            "left_id": 43,
-            "right_id": 543,
-            "mismatch_voxels": 0
-          },
-          {
-            "left_id": 226,
-            "right_id": 726,
-            "mismatch_voxels": 0
-          },
-          {
-            "left_id": 228,
-            "right_id": 728,
-            "mismatch_voxels": 0
-          },
-          {
-            "left_id": 229,
-            "right_id": 729,
-            "mismatch_voxels": 0
-          },
-          {
-            "left_id": 230,
-            "right_id": 730,
-            "mismatch_voxels": 0
-          }
-        ]
-      },
-      "synthetic_edited_partition": {
-        "scope_voxels": 30256,
-        "parcel_union_voxels": 30256,
-        "gap_voxels": 0,
-        "overlap_voxels": 0,
-        "leak_voxels": 0,
-        "overlap_pairs": []
-      },
-      "candidate_voxel_mismatches": {
-        "R-INS-scope": 0,
-        "ARM_L6_539": 0,
-        "ARM_L6_541": 0,
-        "ARM_L6_542": 0,
-        "ARM_L6_543": 0,
-        "ARM_L6_726": 0,
-        "ARM_L6_728": 0,
-        "ARM_L6_729": 0,
-        "ARM_L6_730": 0,
-        "R-mirror-test-child": 0
-      },
-      "native_candidate_save_reload": {
-        "bytes": 54380,
-        "sha256": "41983aa5dfc57670afd2be331aa4ec2d555936cb6920c255d3b0e516bd8d77cd",
-        "output_distributed": false
-      }
+      "native_test_correction": "Initial hierarchy checker failed on unsupported GetSegmentationNodeID/GetSourceVolumeNodeID. Harness changed to node getters followed by GetID; editor/resolver code unchanged; hierarchy phase passed on rerun. The unchanged insula branch was not rerun solely for this checker fix."
     },
     "cli_real_inputs": {
       "check_status": "validated",
@@ -310,14 +451,60 @@
         6
       ],
       "hierarchical_source_sha256": "8f7f1dec9fe6ccd1b6c8fce45e3b2cbc7d542ce4a4256500ee562e7e25ddbac7",
-      "output_directory_created": false
+      "output_directory_created": false,
+      "hierarchy_search": "R ACC L3 read-only search passed",
+      "hierarchy_input_check": "R ACC profile (ID503/L3) validated against matching template and ARM6; no writes",
+      "hierarchy_cli_tested_module_sha256": "bc9afc7333b0a9cafe89330a49c1f8248eb74abc76226b5032adeb900fb5b186"
     },
-    "ci": "Workflow provided; actual run status is available in GitHub Actions for each commit, separate from local validation."
+    "ci": "Workflow provided; actual run status is available in GitHub Actions for each commit, separate from local validation.",
+    "tested_hierarchy_module_sha256": "73a6d7221ac146494525157d31881b94f430fed6efa01df8e77054a240e6c938",
+    "provider_pair_audit": {
+      "paired_nodes_passed": 837,
+      "failed": 0,
+      "module_sha256_at_check": "73a6d7221ac146494525157d31881b94f430fed6efa01df8e77054a240e6c938",
+      "scope": "Read-only all left nodes and paired right selections; no volumes or scene mutation."
+    }
   },
   "limitations": [
+    "Hierarchy grouping supports the external explicit ARM CSV with uniquely paired CL/CR or SL/SR paths and selected labels present in the L6 volume. Other ontologies/atlases are not automatically supported.",
     "Technical validation does not establish anatomical boundaries, biological symmetry or human acceptance.",
     "Native test changes are synthetic and in-memory; no human annotation distributed.",
     "Full bilateral integer-label NIfTI export/merge is not implemented.",
-    "Project code license not selected; external NMT/ARM terms and citations remain separate."
-  ]
+    "Project code license not selected; external NMT/ARM terms and citations remain separate.",
+    "Display colors are paired consistently but may repeat for large groups; they are not an anatomical identity map."
+  ],
+  "standalone_baseline": {
+    "commit": "40e117c55ac18eba2bcc07800c9cc101a3ba50c7",
+    "version": "0.6.0 (local/unreleased)",
+    "module_sha256": "5ad1c8fd1a0af91911c10465aed7f184a34ba8c2b49d4e7f7232c4530ae9a78e",
+    "provenance_url": "https://github.com/bylaikaby/ARMins/blob/40e117c55ac18eba2bcc07800c9cc101a3ba50c7/provenance.json",
+    "policy": "Original source mapping and prior published validation remain available at this immutable commit."
+  },
+  "hierarchy_adaptation_references": [
+    {
+      "logical_file": "region_analysis/hierarchy_table.py",
+      "sha256": "3fbcda26b528e610e1bc51dc78c1ec7da795099fc703eef71d06fe925d44b4aa",
+      "use": "Explicit hierarchy-column semantics, not direct vendoring or a runtime dependency."
+    },
+    {
+      "logical_file": "region_analysis/hierarchy.py",
+      "sha256": "55f87d391db0995ff8cfc3f4026b1c1f694f9948cc53f7b1ce770958a50dcdf4",
+      "use": "Explicit hierarchy-column semantics, not direct vendoring or a runtime dependency."
+    },
+    {
+      "logical_file": "BrainRegion.py",
+      "sha256": "d8e37e4f3bc3f0fb1a0d3add89a4a6362ce77aef0f255f8628a66d4c6d4a276c",
+      "use": "Exact node lookup and subtree-collection pattern; separate JSON ontology, network stack and fixed image-index coordinates are not adopted."
+    }
+  ],
+  "external_hierarchy_input": {
+    "filename": "tables_ARM/ARM_key_table.csv",
+    "source": "Official AFNI symmetric NMT v2.1 archive, externally obtained; no table is bundled",
+    "sha256": "f8214369170e2847ad1558295858222308c14ce98c8a91de88d1b40bebf5a39c",
+    "rows": 686,
+    "nodes": 1674,
+    "level_columns": "Level_1..Level_6, corresponding _abbr and _index",
+    "acquisition_date": null,
+    "qc_status": "837 left nodes and paired right selections resolved with equal paired profile hashes; actual label volumes checked in the bounded ACC test"
+  }
 }

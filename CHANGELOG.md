@@ -2,6 +2,25 @@
 
 One consolidated history. README.md is the operator guide.
 
+## 0.7.0 - 2026-10-22 (local/unreleased)
+
+- Added explicit ARM hierarchy search and parent-to-level-6 grouping from an
+  external provider CSV. Search results require a specific parent selection;
+  names, numeric IDs, level and hemisphere remain explicit. No atlas data,
+  ontology or projectome runtime dependency is bundled.
+- Added region profiles with explicit bilateral label correspondence, distinct
+  group/source bindings and preserved earlier scene groups. The original
+  eight-label insula preset remains available unchanged.
+- Made either L or R selectable as the working hemisphere and initial editor
+  focus; mirroring validates the selected reference and label pairs before
+  creating a separate opposite-side candidate.
+- Expanded README into the complete symmetry-first GUI guide, including
+  download, region selection, local editing masks, subdivision, dry-run,
+  mirroring, visibility checks, save/reload and current export limitations.
+  Preserved the user's opening description and anatomical attribution.
+- Validation for the final tested snapshot is recorded in provenance.json.
+  No tagged release or anatomical acceptance is claimed.
+
 ## 0.6.0 - 2026-10-22 (local/unreleased)
 
 - Extracted the existing 0.5.0 editor into standalone `armins.py`; replaced

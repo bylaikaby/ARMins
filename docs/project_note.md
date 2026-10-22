@@ -4,8 +4,10 @@ Updated 2026-10-22 | Agent Codex | Asia/Shanghai.
 
 ## Current status and entry points
 
-ARMins is a standalone candidate editor for ARM level-6 insula parcels in the
-symmetric NMT v2.1 reference. README.md is the main operator/download guide;
+ARMins supports expert curation of the insula atlas and provides a standalone
+candidate editor for ARM level-6 region groups in symmetric NMT v2.1. The
+original insula preset remains the default. README.md is the complete GUI and
+operator/download guide;
 armins.py is the executable source; CHANGELOG.md and provenance.json record
 version changes and technical validation. No tagged release or new anatomical
 atlas is accepted by this source snapshot.
@@ -23,6 +25,43 @@ unnecessary extraction. Hierarchical preparation remains an optional bounded
 operation. Template images remain external references; source data are preserved.
 
 ## Operations journal
+
+### 2026-10-22 | Agent Codex | Hierarchy region selection and symmetry-first guide
+
+- Objective: provide a complete README guide; allow either L or R as the working
+  hemisphere; search a particular ARM hierarchy region and group all of its
+  descendant level-6 parcels for editing. Preserve the user's scientific
+  description and attribution to Henry Evrard.
+- Starting point: the public 0.6.0 editor plus the user's opening README text.
+  Prior default insula behavior and source hashes are preserved in provenance;
+  this update is a local/unreleased candidate until separately released.
+- Source review: the earlier region-analysis hierarchy reader supplies explicit
+  Level_1..6 name/abbreviation/index semantics. The initial region parser also
+  uses exact-node lookup and subtree traversal. Its separate JSON ontology,
+  network services and fixed image-index coordinates are not imported. The
+  standalone reader uses the provider's external ARM CSV and the standard
+  library; First_Level/Last_Level availability metadata are not parent paths.
+- Scientific choice: selecting one explicit parent determines its deduplicated
+  level-6 leaves. Text search suggests individual nodes rather than silently
+  joining all matches. Cortical/subcortical namespace, level, ID and hemisphere
+  remain explicit. The eight-label insula preset spans multiple branches and
+  is retained unchanged, separately from hierarchy-defined groups.
+- Symmetry choice: either hemisphere may be the edit source. The selected
+  template, paired labels and integer voxel lattice must pass the same checks
+  before reflection. Mirroring is an explicit candidate-generation action,
+  avoids independently redrawing a symmetric atlas product, and does not imply
+  biological symmetry or anatomical acceptance.
+- Validation: 49 distinct synthetic tests and all837 bilateral hierarchy-node
+  pair checks passed. Actual Slicer 5.12.0 design was visually reviewed before
+  behavior checks. The insula and ACC phases each passed11 native checks. An
+  initial ACC test failed because the checker used an unsupported node-ID
+  getter; the harness was corrected, with the editor module unchanged, and the
+  ACC phase passed on rerun. Final hashes/results are in provenance.json.
+  Search/preview, scene mutation, preserved source/editor state, and save/reload
+  were checked separately.
+- Current limitations: full bilateral integer-label NIfTI export/merge and code
+  license selection remain open. A curated atlas release still needs its own
+  anatomical review, label table and release record.
 
 ### 2026-10-22 | Agent Codex | Standalone extraction and atlas setup
 
@@ -43,8 +82,9 @@ operation. Template images remain external references; source data are preserved
 
 ## Priority review guide
 
-1. Follow README.md's Atlas setup section and open the editor; verify the two
-   matching standard-resolution input files and the intended editing side.
+1. Follow README.md's Atlas setup and complete editing guide; verify the two
+   matching standard-resolution files, optional hierarchy CSV, selected parent
+   and descendant preview, and the L or R working hemisphere.
 2. Edit/save one side, create a separate mirror candidate, and inspect actual
    boundaries. Expect zero partition errors and preserved working nodes.
 3. Save to a new `.seg.nrrd`, reload, and inspect parcel identity and extent.
