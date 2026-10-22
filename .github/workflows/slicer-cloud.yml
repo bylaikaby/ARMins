@@ -1,4 +1,4 @@
-# Version: 0.7.3 (local/unreleased)
+# Version: 0.7.4 (local/unreleased)
 # Last updated: 2026-10-22
 # Change history: CHANGELOG.md
 name: Fresh-machine Slicer
@@ -74,7 +74,7 @@ jobs:
           }
           if (-not (Test-Path -LiteralPath $slicer)) { throw 'Slicer executable missing' }
           "ARMINS_SLICER=$slicer" >> $env:GITHUB_ENV
-          @{slicer_version='5.12.0'; package_url=$url; sha512=$sha; runner_os=$env:RUNNER_OS; image_version=$env:ImageVersion; github_sha=$env:GITHUB_SHA; phase=$env:ARMINS_TEST_PHASE; slicer_pip_installs=@(); cache_used=$false} | ConvertTo-Json | Set-Content (Join-Path $out 'cloud-runtime.json')
+          @{slicer_version='5.12.0'; package_url=$url; sha512=$sha; runner_os=$env:RUNNER_OS; image_version=$env:ImageVersion; github_sha=$env:GITHUB_SHA; phase=$env:ARMINS_TEST_PHASE; slicer_pip_installs=@(); cache_used=$false; windows_graphics='bundled Qt software OpenGL for GPU-less VM'} | ConvertTo-Json | Set-Content (Join-Path $out 'cloud-runtime.json')
       - name: Download public AFNI inputs for native load tests
         if: inputs.phase != 'design'
         run: |
@@ -106,6 +106,7 @@ jobs:
           $script = Join-Path $env:GITHUB_WORKSPACE 'ARMins fresh install/tests/slicer_smoke.py'
           $env:ARMINS_OUTPUT_DIR = Join-Path $env:ARMINS_TEST_OUTPUT 'outputs'
           if ($IsWindows) {
+            $env:QT_OPENGL = 'software'
             $p = Start-Process $env:ARMINS_SLICER -ArgumentList @('--testing', '--no-splash', '--python-script', "`"$script`"") -RedirectStandardOutput (Join-Path $env:ARMINS_TEST_OUTPUT 'stdout.log') -RedirectStandardError (Join-Path $env:ARMINS_TEST_OUTPUT 'stderr.log') -Wait -PassThru -WindowStyle Hidden
             $code = $p.ExitCode
           } else {

@@ -1,6 +1,6 @@
 """Isolated native Slicer integration check for ARMins.
 
-Version: 0.7.3 (local/unreleased)
+Version: 0.7.4 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: candidate
@@ -66,6 +66,10 @@ def main():
         receipt['runtime'] = {'python': sys.version, 'numpy': np.__version__,
                               'os': platform.platform(), 'working_directory': str(Path.cwd())}
         receipt['tool_version'] = ns['VERSION']
+        report = ns['dependency_report']('gui')
+        assert report['ready'], report
+        assert 'nibabel' not in {c['name'] for c in report['checks']}
+        receipt['gui_dependencies'] = report
         glob = ns['run'].__globals__
         if phase == 'design':
             main_window = slicer.util.mainWindow()

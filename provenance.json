@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
   "recorded_date": "2026-10-22",
-  "tool_version": "0.7.3 (local/unreleased)",
+  "tool_version": "0.7.4 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -32,20 +32,20 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "1ef3e54279aa100d6c2e3314043a58f92ccb9eb93db1054b8c3c30f4cff50b20",
-      "bytes": 24777,
+      "sha256": "6aab73313e4f4a1378cfb30e8fdd3d1189cb08e9532d8b16549455e8f93872ca",
+      "bytes": 28197,
       "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "393bfc90d43d6772767b79b23663cacf8cbcbe08b71823b4c39bad1523df1bb3",
-      "bytes": 101900,
-      "inputs": "Published 0.7.2; only tool version incremented for cloud testing update."
+      "sha256": "b794bbb6a9335b58f53fe61fbec04d120dcd2dc37e2d45286cd2e5d6077cfc02",
+      "bytes": 105916,
+      "inputs": "Published 0.7.3 plus read-only dependency report/startup/CLI preflight; scientific functions AST unchanged."
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "e80828f4d57521b31087cdfa746d4c95c07cbca555f62ef207e840c99f68f209",
-      "bytes": 4657,
+      "sha256": "d55fb91acdfb2723596b4137a9869a5bcc6689b09967fd86e95d1920d2673cb2",
+      "bytes": 5609,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -62,27 +62,27 @@
     },
     "requirements.txt": {
       "purpose": "Ordinary-Python CLI and synthetic-test dependencies; Slicer uses bundled NumPy.",
-      "sha256": "efbf5238b408b9564a6319877a834130bfd222b5a2becdfb4ebbfbd08df7cf63",
-      "bytes": 25,
+      "sha256": "416c9b351d362470a0ecf96135fe36f97428ce4e19559424278af9a006ed8b9b",
+      "bytes": 31,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     ".github/workflows/tests.yml": {
       "purpose": "Synthetic tests on Ubuntu and Windows with Python 3.12.",
-      "sha256": "8e9f5b372f901c809ecab11d180a77de588511cfcca676d0bf5caeea3d5bf6df",
-      "bytes": 453,
+      "sha256": "65a85a7ed181217bbb7b042462f4132ae4541c3014bd4b7b44eafede6944afeb",
+      "bytes": 1088,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "5eea29a68acdbf82ea18702eff868dd8aa530327b0505385394fe2f11f1acc83",
-      "bytes": 9045,
+      "sha256": "db1bcdca16b968a2da5303182c4795c0e49908abdbff4afaa644e142742ae0bf",
+      "bytes": 10583,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
       "sha256": "e6f6228a3f0e95445955bfa069e1e58e89929688b84421e0cf0511bfc719f5d1",
       "bytes": 59461,
-      "inputs": "Actual Slicer 5.12.0 design capture with current 0.7.2 module; blank inputs, no private paths."
+      "inputs": "Actual native 0.7.4 Slicer help capture, empty inputs, no private data."
     },
     "tests/test_editor.py": {
       "purpose": "Synthetic scope/input/editor compatibility regression tests.",
@@ -98,14 +98,14 @@
     },
     "tests/test_preparation.py": {
       "purpose": "Synthetic NIfTI/CLI preparation, provenance and non-overwrite tests.",
-      "sha256": "5f618919711a9ae69589c83a7542f3b5e562ce5b6172b17cace633be3b9ac004",
-      "bytes": 11501,
-      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+      "sha256": "3a9993d678a7a3dba077f5ae3f2140f4f58567f79411faf2aac87521f81d5faa",
+      "bytes": 13355,
+      "inputs": "Synthetic NIfTI fixtures plus installed/missing-dependency, version and wrong-interpreter subprocess checks."
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
-      "sha256": "6d7e96a5386c0d89466cb3824bb1764b9046ff89442bbd759cde612222e9048b",
-      "bytes": 31958,
+      "sha256": "abc166157a0e78011b7abcbceea599e56bc5a8f140b8b195a1ffe5752a506dfd",
+      "bytes": 32160,
       "inputs": "Registered baseline and standalone changes"
     },
     "arm_hierarchy.py": {
@@ -128,15 +128,27 @@
     },
     "docs/editor.png": {
       "purpose": "Native versioned GUI screenshot for README.",
-      "inputs": "Actual 0.7.3 Slicer 5.12.0 import-based design preflight; blank paths.",
-      "sha256": "01232101d9a9dc1144da3d45b8e2eaad58929e40d13117ff9a15fc8e89988fcf",
-      "bytes": 108380
+      "inputs": "Actual native 0.7.4 Slicer 5.12.0 design phase, empty inputs and successful automatic GUI dependency preflight.",
+      "sha256": "186c2f9927b63e707e6574f6541703c31ba0ceb013af31dd8f73084723284431",
+      "bytes": 108369
     },
     ".github/workflows/slicer-cloud.yml": {
       "purpose": "Manual fresh cloud-machine Slicer import/design and public-input native checks.",
       "inputs": "Official Slicer 5.12.0 download-page SHA512 values; official AFNI symmetric v2.1 archive with registered input SHA256; existing native harness.",
-      "sha256": "31b65e357d65c37152566882703608abfd996febe61a84d3fa251154f2aa4350",
-      "bytes": 7219
+      "sha256": "77e7e07598e31a200d203495c93962e9980bf1ac7a251df16c19c960c2d9ae3f",
+      "bytes": 7322
+    },
+    "environment.yml": {
+      "purpose": "Optional isolated Conda CLI runtime, not a GUI/Slicer installer.",
+      "inputs": "Python 3.12, conda-forge NumPy >=1.24,<3 and nibabel >=5.1,<6; bounded recipe, resolved versions recorded by CI.",
+      "sha256": "fb84968c37419fdbe37e1eb51a512dbd80b5c3e8f6ad6cedc1ebb2d89ecc9d93",
+      "bytes": 288
+    },
+    ".gitattributes": {
+      "purpose": "Stable source LF bytes across Windows and Linux; PNG files remain binary.",
+      "inputs": "Observed cloud clone line-ending differences; no scientific data changed.",
+      "sha256": "790bbdb68463747c34f91f2c422e4e029ec2adc9fa8b45b4095668cb8d7497b9",
+      "bytes": 100
     }
   },
   "manifest_self": {
@@ -591,7 +603,7 @@
     },
     "scope": "Version display only. Existing function AST differences limited to show_gui, show_atlas_setup_help and _build_cli_parser; prior hierarchy/mirror checks retained under their tested hashes."
   },
-  "validation": {
+  "cloud_preflight_validation_0_7_3": {
     "tested_module_sha256": "393bfc90d43d6772767b79b23663cacf8cbcbe08b71823b4c39bad1523df1bb3",
     "synthetic_tests": {
       "passed": 49,
@@ -621,6 +633,44 @@
       "first_design_run": "https://github.com/bylaikaby/ARMins/actions/runs/39738556995",
       "first_linux_failure": "Slicer launcher exit 127 before Python: libxcb-shape.so.0 missing",
       "correction": "Install libxcb-shape0, libxcb-xfixes0 and documented qt5dxcb-plugin Linux runtime prerequisites."
+    }
+  },
+  "validation": {
+    "tested_module_sha256": "b794bbb6a9335b58f53fe61fbec04d120dcd2dc37e2d45286cd2e5d6077cfc02",
+    "synthetic_tests": {
+      "passed": 52,
+      "failed": 0,
+      "command": "python -m unittest discover -s tests -p test_*.py -q"
+    },
+    "native_local": {
+      "version": "5.12.0",
+      "checks": [
+        "dialog-local VisPa palette and redundant L/R colour-direction cues leave scene and Slicer theme unchanged",
+        "dark inactive text and placeholder; distinct purple region action retains disabled state",
+        "setup help opens without scene changes and exposes official links and copyable install command",
+        "native setup-help Close button accepts the Qt clicked signal and closes the dialog",
+        "main title/banner and help title show the authoritative version; mirror controls retained; screenshot saved"
+      ],
+      "gui_dependencies_ready": true,
+      "screenshots_reviewed": true
+    },
+    "cloud_gui_startup_0_7_3": {
+      "status": "passed",
+      "run": "https://github.com/bylaikaby/ARMins/actions/runs/39738903061",
+      "targets": [
+        "Windows Server 2025",
+        "Ubuntu 22.04"
+      ],
+      "initial_failure": "Ubuntu launcher lacked libxcb-shape.so.0 before Python; runtime packages added; rerun passed.",
+      "windows_rendering_limit": "Initial default graphics emitted OpenGL warnings; dialog startup succeeded. Subsequent load workflow selects bundled Qt software OpenGL."
+    },
+    "conda_environment": {
+      "status": "pending cloud solve/tests",
+      "recipe": "environment.yml"
+    },
+    "cloud_current_native_load": {
+      "status": "pending",
+      "workflow": ".github/workflows/slicer-cloud.yml"
     }
   }
 }

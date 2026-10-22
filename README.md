@@ -22,7 +22,7 @@ review and saving. Optional command-line operations follow the GUI workflow.
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs) ·
 [Command line](#optional-command-line-tools)
 
-Current tool version: **0.7.3 (local/unreleased)**. The GUI title/header and
+Current tool version: **0.7.4 (local/unreleased)**. The GUI title/header and
 `python armins.py --version` show the same value. See [CHANGELOG.md](CHANGELOG.md)
 for dated changes and validation.
 
@@ -52,6 +52,45 @@ for dated changes and validation.
 The standard GUI workflow uses Slicer's bundled Python and NumPy. AFNI and an
 external Python installation are optional; neither is required to select the
 ready-made atlas files in Slicer.
+
+## Dependency setup and checks
+
+**GUI:** install the official [3D Slicer application](https://download.slicer.org/).
+Slicer provides its own Python, NumPy, Qt and VTK; the ARMins GUI checks these
+before opening. Our native tests use Slicer 5.12.0. Do not start the GUI from a
+Conda interpreter or install pip `slicer`/PyQt into Slicer. Conda does not install
+the 3D Slicer application. Platform graphics/X11 libraries are OS prerequisites.
+In Slicer's Python Console, inspect the read-only diagnostic with:
+
+```python
+import armins
+print(armins.dependency_report("gui"))
+```
+
+**Optional CLI:** install [Miniforge/Conda](https://conda-forge.org/download/),
+then create the isolated environment from this checkout:
+
+```sh
+conda env create -f environment.yml
+conda activate armins-cli
+python armins.py doctor
+python armins.py --version
+```
+
+For an existing environment after updating the checkout:
+
+```sh
+conda env update -n armins-cli -f environment.yml
+conda run -n armins-cli python armins.py doctor
+```
+
+The recipe installs Python 3.12, NumPy >=1.24,<3 and nibabel >=5.1,<6.
+It is a bounded recipe, not a platform lockfile; CI records the actual resolved
+package list. Ordinary Python with `python -m pip install -r requirements.txt`
+is also supported. `doctor` is read-only, prints versions/missing requirements
+and exits 1 when the selected runtime is not ready; it remains usable without
+NumPy/nibabel. `check`/`prepare` also preflight their dependencies. No atlas data,
+packages or settings are downloaded or changed automatically by the GUI/doctor.
 
 ## Atlas setup
 
@@ -311,6 +350,11 @@ from parcel partition checks and remain hidden in mirror candidates.
 
 | Symptom | Check or action |
 |---|---|
+| GUI fails before opening | Run inside Slicer, then copy the first Python Console traceback. Record Slicer/ARMins versions and `armins.__file__`; an older imported module may remain loaded until restart. |
+| `No module named qt` or Slicer-environment error | Run the GUI in Slicer's Python Console; installing a similarly named pip package does not supply Slicer's Qt/MRML runtime. |
+| `No module named arm_hierarchy` | Keep the complete checkout together, including `arm_hierarchy.py`; add that checkout directory to `sys.path`. |
+| Linux Slicer reports `libxcb-shape.so.0` missing | This is an OS prerequisite before ARMins imports. The fresh Ubuntu 22.04 test requires `libxcb-shape0`, `libxcb-xfixes0`, `qt5dxcb-plugin` and Slicer's other Linux runtime libraries; see the workflow and [official prerequisites](https://slicer.readthedocs.io/en/v5.12.0/user_guide/getting_started.html). |
+| OpenGL context errors | Check Slicer's graphics/driver requirements. A successful ARMins dialog or array test does not prove that 3D rendering works. |
 | No hierarchy results | Use `ARM_key_table.csv`, check side/level and try the official abbreviation or numeric ID. |
 | Painting does nothing | Confirm the selected parcel, Paint effect and Editable area; inspect the mask and any intensity restriction. |
 | A hidden parcel overlaps the edit | Restore the intended local parent mask and transfer the disputed voxels to only one parcel; hiding it does not constrain painting. |
@@ -413,12 +457,18 @@ containing spaces and an unrelated working directory, without pip-installing
 packages into Slicer. Run `design`, review the screenshots, then run `hierarchy`
 or `behavior` with the public AFNI NMT/ARM archive. Each package/input is checked
 against its registered checksum. No local configuration, cache or atlas is copied.
+The GPU-less Windows VM uses Slicer's bundled Qt software OpenGL (`QT_OPENGL=software`);
+Linux uses Xvfb/Mesa. These settings belong to the CI process, not global PC settings.
 Small receipts, runtime details, logs and screenshots are retained for 14 days;
 no atlas volumes or edited segmentations are uploaded as artifacts.
 
-This workflow extends the existing synthetic Python CI. Cloud-native results
-are pending until a run completes; see provenance.json and Actions for the
-observed status. It does not establish compatibility with every PC or GPU.
+This workflow extends the existing synthetic Python CI. Cloud GUI startup passed on Windows Server 2025 and Ubuntu 22.04 in
+[run 39738903061](https://github.com/bylaikaby/ARMins/actions/runs/39738903061).
+The first Ubuntu attempt stopped before Python because libxcb-shape.so.0 was
+missing; installing its OS prerequisite fixed that launch. The Windows dialog
+passed with default VM graphics warnings; the subsequent load test uses bundled
+software OpenGL. Updated dependency/Conda and native load results are pending;
+see provenance.json and Actions for the observed status. It does not establish compatibility with every PC or GPU.
 
 
 ```sh
@@ -440,6 +490,10 @@ local to the ARMins dialogs; atlas and mirror algorithms are unchanged.
 Version 0.7.2 adds visible GUI/CLI version reporting; its 49 synthetic tests
 and five native design/help checks passed. Prior scientific behavior evidence
 retains its original tested version and hashes in provenance.json.
+
+Version 0.7.4 passed 52 local synthetic tests, including missing site packages,
+wrong GUI interpreter and read-only doctor reports, plus native GUI preflight.
+Fresh Conda and updated cloud load results are tracked in provenance.json.
 
 The array, editor, NIfTI and CLI tests use synthetic fixtures. Native Slicer
 testing uses explicitly supplied external inputs and a separate testing scene;

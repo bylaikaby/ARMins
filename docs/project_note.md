@@ -26,6 +26,27 @@ operation. Template images remain external references; source data are preserved
 
 ## Operations journal
 
+### 2026-10-22 | Agent Codex | Dependency checks and isolated CLI environment
+
+- Follow-up: ensure dependencies are installed; offer Conda or an equivalent.
+  GUI runtime belongs to the official Slicer application; optional CLI gets a
+  separate Conda recipe. No Conda Qt, pip slicer, secrets or local configs added.
+- Added `doctor`, usable even without site packages, and automatic GUI/NIfTI CLI
+  preflight. Added a fresh Conda creation/test job, explicit version bounds and
+  setup/update commands. Reports are read-only; missing GUI runtime points to
+  Slicer repair/system prerequisites. Current tool version 0.7.4.
+- Fresh cloud startup 0.7.3: Windows and Ubuntu passed in run 39738903061 after
+  fixing Ubuntu's missing libxcb-shape.so.0 before Python. Reviewed both actual
+  cloud screenshots before load tests. Windows default VM graphics warnings
+  limit rendering claims; cloud load tests select bundled Qt software OpenGL.
+- Cloud checkouts also exposed CRLF/LF source-byte differences. Added attributes
+  to stabilize new source hashes; retain earlier recorded hashes as historical.
+- Local dependency tests cover installed CLI, missing site packages, wrong GUI
+  interpreter, native Slicer preflight and preserved existing behavior. Fresh
+  Conda solve and current cloud hierarchy/load tests are pending; user traceback
+  remains unknown. No scientific atlas-boundary or GPU acceptance is inferred.
+
+
 ### 2026-10-22 | Agent Codex | Fresh cloud-machine initialization investigation
 
 - Trigger: reported initialization bugs without a traceback; asked whether
@@ -37,7 +58,8 @@ operation. Template images remain external references; source data are preserved
   inputs. No local package/config/cache or personal data is transferred.
 - Test stages: design/import first, visual review of actual cloud screenshots,
   then public-input hierarchy/load behavior. Local preflight passed 49 synthetic
-  tests and import-based design checks. Cloud results are pending.
+  tests and import-based design checks. Cloud GUI startup passed on both operating systems in run 39738903061.
+  Native public-input loading and the dependency follow-up are tracked above.
 - Current entry: Actions / Fresh-machine Slicer. Receipts, logs and screenshots
   identify the tested commit/runtime; volumes and segmentations stay ephemeral.
   Actual user startup error, older Slicer versions, consumer-PC GPU/driver

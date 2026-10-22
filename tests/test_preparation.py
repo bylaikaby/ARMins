@@ -1,6 +1,6 @@
 """Synthetic NIfTI preparation and portable CLI checks for ARMins.
 
-Version: 0.7.2 (local/unreleased)
+Version: 0.7.4 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: candidate
@@ -188,13 +188,44 @@ class PrepareLevel6Tests(unittest.TestCase):
         completed = subprocess.run(
             [sys.executable, str(REPO / "armins.py"), "--help"],
             check=True, capture_output=True, text=True)
-        self.assertIn("{check,prepare,search,gui}", completed.stdout)
+        self.assertIn("{doctor,check,prepare,search,gui}", completed.stdout)
         self.assertIn(armins.VERSION, completed.stdout)
         version = subprocess.run(
             [sys.executable, str(REPO / "armins.py"), "--version"],
             check=True, capture_output=True, text=True, cwd=self.root)
         self.assertEqual(version.stdout.strip(), f"ARMins {armins.VERSION}")
 
+
+    def test_doctor_reports_real_cli_dependencies_without_writes(self):
+        result = subprocess.run([sys.executable, str(REPO / "armins.py"), "doctor"],
+                                capture_output=True, text=True, cwd=self.root)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertTrue(report["ready"])
+        self.assertEqual(report["writes"], [])
+        self.assertEqual({c["name"] for c in report["checks"]},
+                         {"python", "numpy", "nibabel", "arm_hierarchy.py"})
+
+    def test_doctor_and_version_survive_missing_site_packages(self):
+        command = [sys.executable, "-S", str(REPO / "armins.py")]
+        result = subprocess.run(command + ["doctor"], capture_output=True, text=True, cwd=self.root)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = json.loads(result.stdout)
+        missing = {c["name"] for c in report["checks"] if not c["ready"]}
+        self.assertEqual(missing, {"numpy", "nibabel"})
+        self.assertIn("conda env create -f environment.yml", report["guidance"])
+        version = subprocess.run(command + ["--version"], capture_output=True, text=True, cwd=self.root)
+        self.assertEqual(version.returncode, 0, version.stderr)
+        self.assertEqual(version.stdout.strip(), f"ARMins {armins.VERSION}")
+
+    def test_gui_doctor_rejects_an_ordinary_python_environment(self):
+        with patch.object(armins, "slicer", object()):
+            report = armins.dependency_report("gui")
+        self.assertFalse(report["ready"])
+        app = next(c for c in report["checks"] if c["name"] == "3D Slicer application")
+        self.assertFalse(app["ready"])
+        self.assertIn("Python Console", app["error"])
+        self.assertNotIn("nibabel", {c["name"] for c in report["checks"]})
 
     def test_cli_check_dry_run_resolves_and_validates_without_writes(self):
         self._save_atlas(self._multilevel("5d"))

@@ -2,6 +2,19 @@
 
 One consolidated history. README.md is the operator guide.
 
+## 0.7.4 - 2026-10-22 (local/unreleased)
+
+- Add read-only `doctor` CLI/GUI dependency reports. GUI startup and NIfTI CLI
+  operations preflight their own runtimes; doctor/help/version remain usable
+  without NumPy/nibabel. No automatic installs or scene/data writes.
+- Add an optional Conda CLI recipe and a fresh Conda CI job. Keep Slicer's
+  embedded Python/Qt/VTK separate from Conda; record resolved package versions.
+- Add consistent LF source checkout rules after cloud Windows/Linux byte hashes
+  differed only by line endings. Use bundled Qt software OpenGL for GPU-less
+  Windows cloud load tests; do not alter application/global PC graphics settings.
+- Local checks: 52 synthetic tests and native GUI/preflight checks; fresh Conda
+  and current native atlas-loading cloud results pending.
+
 ## 0.7.3 - 2026-10-22 (local/unreleased)
 
 - Add a manual fresh-machine Slicer workflow for Windows/Ubuntu: official fixed
@@ -12,9 +25,11 @@ One consolidated history. README.md is the operator guide.
 - Keep tool version visible as 0.7.3. Atlas/edit/mirror algorithms unchanged.
 - First cloud design run: Windows passed; Ubuntu Slicer failed before Python
   with missing libxcb-shape.so.0. Added its XCB runtime and the documented
-  qt5dxcb-plugin dependency; rerun pending.
+  qt5dxcb-plugin dependency; Windows/Ubuntu startup rerun passed
+  (run 39738903061). Windows default VM graphics emitted OpenGL warnings;
+  startup pass is not a full 3D rendering acceptance.
 - Local preflight: 49 synthetic tests, import-based native design checks and
-  YAML/PowerShell syntax checks passed. Cloud execution is pending.
+  YAML/PowerShell syntax checks passed. Cloud startup is now verified.
 
 ## 0.7.2 - 2026-10-22 (local/unreleased)
 

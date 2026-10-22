@@ -1,2 +1,2 @@
-numpy>=1.24
-nibabel>=5.1
+numpy>=1.24,<3
+nibabel>=5.1,<6

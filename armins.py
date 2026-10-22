@@ -1,6 +1,6 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.7.3 (local/unreleased)
+Version: 0.7.4 (local/unreleased)
 Last updated: 2026-10-22
 Change history: CHANGELOG.md
 Status: experimental
@@ -18,13 +18,18 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
-import numpy as np
+try:
+    import numpy as np
+    NUMPY_IMPORT_ERROR = None
+except Exception as exc:  # Keep doctor/help/version usable in a clean Python.
+    np = None
+    NUMPY_IMPORT_ERROR = str(exc)
 try:
     import slicer
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.7.3 (local/unreleased)"
+VERSION = "0.7.4 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):
@@ -33,11 +38,60 @@ def _runtime_provenance(nib=None):
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "processing_timezone": "UTC",
         "python_version": sys.version.split()[0],
-        "numpy_version": np.__version__,
+        "numpy_version": np.__version__ if np is not None else None,
     }
     if nib is not None:
         provenance["nibabel_version"] = nib.__version__
     return provenance
+
+
+def dependency_report(mode="cli"):
+    """Read-only runtime preflight; never install packages or change the scene."""
+    if mode not in ("cli", "gui"):
+        raise ValueError("dependency mode must be cli or gui")
+    checks = []
+
+    def check(name, ready, version=None, error=None):
+        checks.append({"name": name, "ready": bool(ready), "version": version,
+                       "error": error if not ready else None})
+
+    check("python", sys.version_info >= (3, 10), sys.version.split()[0],
+          "Python 3.10 or newer is required")
+    numpy_version = np.__version__ if np is not None else None
+    numpy_parts = tuple(int(v) for v in re.findall(r"\d+", numpy_version or "")[:2])
+    check("numpy", np is not None and (1, 24) <= numpy_parts < (3, 0), numpy_version,
+          NUMPY_IMPORT_ERROR or "NumPy >=1.24,<3 is required")
+    sibling = Path(__file__).resolve().with_name("arm_hierarchy.py")
+    check("arm_hierarchy.py", sibling.is_file(), error="Keep the complete ARMins checkout together")
+    if mode == "cli":
+        try:
+            import nibabel
+            parts = tuple(int(v) for v in re.findall(r"\d+", nibabel.__version__)[:2])
+            check("nibabel", (5, 1) <= parts < (6, 0), nibabel.__version__,
+                  "nibabel >=5.1,<6 is required for NIfTI CLI tools")
+        except Exception as exc:
+            check("nibabel", False, error=str(exc))
+        guidance = ["conda env create -f environment.yml", "conda activate armins-cli",
+                    "Alternative: python -m pip install -r requirements.txt"]
+    else:
+        check("3D Slicer application", _has_slicer_scene(),
+              getattr(getattr(slicer, "app", None), "applicationVersion", None),
+              "Open ARMins in the 3D Slicer Python Console; pip/Conda slicer is not the application")
+        for name in ("qt", "vtk"):
+            try:
+                module = __import__(name)
+                supported = (hasattr(module.QPalette, "PlaceholderText") if name == "qt"
+                             else hasattr(module, "vtkMatrix4x4"))
+                check(name, supported, error="Required Slicer runtime API is unavailable")
+            except Exception as exc:
+                check(name, False, error=str(exc))
+        guidance = ["Use the official 3D Slicer application (tested: 5.12.0).",
+                    "GUI dependencies come with Slicer; repair its installation/system prerequisites if missing.",
+                    "Do not install Conda/PyQt or pip slicer into Slicer's Python."]
+    return {"loader_version": VERSION, "mode": mode,
+            "status": "ready" if all(c["ready"] for c in checks) else "missing-dependencies",
+            "ready": all(c["ready"] for c in checks), "checks": checks,
+            "guidance": guidance, "writes": [], "python_executable": sys.executable}
 
 
 def _environment_path(name):
@@ -1511,6 +1565,10 @@ def show_atlas_setup_help(parent=None):
 def show_gui():
     """Show the small input/side/parcel workflow inside 3D Slicer."""
     global INSULA_GUI, PENDING_GUI_PROFILE
+    report = dependency_report("gui")
+    if not report["ready"]:
+        problems = [f"{item['name']}: {item['error']}" for item in report['checks'] if not item['ready']]
+        raise RuntimeError("ARMins startup dependency check failed:\n" + "\n".join(problems + report['guidance']))
     _require_slicer()
     import qt
     PENDING_GUI_PROFILE = None
@@ -1919,6 +1977,8 @@ def _build_cli_parser():
     )
     parser.add_argument("--version", action="version", version=f"ARMins {VERSION}")
     commands = parser.add_subparsers(dest="command")
+    doctor = commands.add_parser("doctor", help="read-only GUI or CLI dependency check")
+    doctor.add_argument("--mode", choices=("cli", "gui"), default="cli")
     check = commands.add_parser("check", help="read-only validate a 3-D ARM L6 label volume")
     check.add_argument("--template", default=str(REF_PATH) if REF_PATH else None)
     check.add_argument("--atlas", default=str(ARM_PATH) if ARM_PATH else None)
@@ -1965,6 +2025,15 @@ def _cli_region_profile(hierarchy_path, region, level, side):
 def main(argv=None):
     parser = _build_cli_parser()
     args = parser.parse_args(argv)
+    if args.command == "doctor":
+        report = dependency_report(args.mode)
+        print(json.dumps(report, indent=2))
+        return 0 if report["ready"] else 1
+    if args.command in ("check", "prepare"):
+        report = dependency_report("cli")
+        if not report["ready"]:
+            missing = "; ".join(f"{c['name']}: {c['error']}" for c in report['checks'] if not c['ready'])
+            parser.error(f"Dependency check failed: {missing}. Run doctor; use conda env create -f environment.yml or pip install -r requirements.txt")
     if args.command == "check":
         profile = _cli_region_profile(args.hierarchy, args.region, args.region_level, args.side)
         result = check_inputs(args.template, args.atlas, level=args.level, region_profile=profile)
