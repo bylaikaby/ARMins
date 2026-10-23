@@ -22,7 +22,7 @@ review and saving. Optional command-line operations follow the GUI workflow.
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs) ·
 [Command line](#optional-command-line-tools)
 
-Current tool version: **0.7.4 (local/unreleased)**. The GUI title/header and
+Current tool version: **0.7.5 (local/unreleased)**. The GUI title/header and
 `python armins.py --version` show the same value. See [CHANGELOG.md](CHANGELOG.md)
 for dated changes and validation.
 
@@ -185,7 +185,7 @@ For another region, choose **ARM hierarchy** and select
 `tables_ARM/ARM_key_table.csv` from the same NMT archive. Search by abbreviation,
 full name or numeric ID; optionally restrict the hierarchy level. Select one
 specific parent result, inspect its level-6 descendants, then click
-**Use selected region (pending)**. Searching and previewing do not change the Slicer scene.
+**Work on selected regions**. Searching and previewing do not change the Slicer scene.
 
 For example, **CL_ACC, level 3, ID 3** groups the left level-6 IDs
 **4, 5, 8, 9 and 10**; its paired right IDs are **504, 505, 508, 509 and 510**.
@@ -202,9 +202,11 @@ Last_Level describe label availability, not parent-child paths.
 
 ![ARMins region selection and working-hemisphere controls](docs/editor.png)
 
-The dialog uses dark text, teal section accents and a purple **Use selected region**
-action. Its pale-purple state is disabled. Working-side cues use teal for L and
-amber for R, alongside explicit hemisphere and mirror-direction text.
+The **Work on selected regions** action uses teal (`#168a91`); its pale state
+is disabled. A hierarchy parent defines both hemispheres. L/R search filters
+identify paired aliases; they do not restrict the group to one side or override
+your chosen **Working hemisphere**. Choose that working side independently.
+Working-side cues remain teal for L and amber for R with explicit direction text.
 
 
 The actual editor before loading: hierarchy controls become available when
@@ -451,6 +453,16 @@ existing destinations. A supplied 3-D ARM6 file is returned without duplication.
 
 
 ## Validation and review
+
+The manual cloud workflow now also offers `target=windows-11-arm`. This is a
+fresh Windows 11 **ARM64** VM running x64 Slicer through Windows emulation;
+it must not be described as native Intel/AMD Windows 11 validation. The job
+records and checks the actual desktop OS/architecture before startup. Current
+Windows 11 execution is pending. Scope is ARMins commands/API, GUI loading,
+editing/mirroring and saving. A `visual` phase captures two actual Slicer 3D
+views for visual inspection, using standard Slicer display commands. It adds no
+ARMins rendering engine; graphics errors are checked separately from data/API tests.
+
 
 Current 0.7.4 verification:
 

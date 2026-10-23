@@ -1,5 +1,5 @@
-# Version: 0.7.4 (local/unreleased)
-# Last updated: 2026-10-22
+# Version: 0.7.5 (local/unreleased)
+# Last updated: 2026-10-23
 # Change history: CHANGELOG.md
 name: Fresh-machine Slicer
 
@@ -11,7 +11,14 @@ on:
         required: true
         default: design
         type: choice
-        options: [design, hierarchy, behavior]
+        options: [design, hierarchy, behavior, visual]
+      target:
+        description: Windows 11 ARM64 runs x64 Slicer under Windows emulation
+        required: true
+        default: standard
+        type: choice
+        options: [standard, windows-11-arm]
+
 
 permissions:
   contents: read
@@ -21,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest]
+        os: ${{ fromJSON(inputs.target == 'windows-11-arm' && '["windows-11-arm"]' || '["ubuntu-22.04","windows-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     defaults:
@@ -74,7 +81,13 @@ jobs:
           }
           if (-not (Test-Path -LiteralPath $slicer)) { throw 'Slicer executable missing' }
           "ARMINS_SLICER=$slicer" >> $env:GITHUB_ENV
-          @{slicer_version='5.12.0'; package_url=$url; sha512=$sha; runner_os=$env:RUNNER_OS; image_version=$env:ImageVersion; github_sha=$env:GITHUB_SHA; phase=$env:ARMINS_TEST_PHASE; slicer_pip_installs=@(); cache_used=$false; windows_graphics='bundled Qt software OpenGL for GPU-less VM'} | ConvertTo-Json | Set-Content (Join-Path $out 'cloud-runtime.json')
+          $osIdentity = $null
+          if ($IsWindows) {
+            $osInfo = Get-CimInstance Win32_OperatingSystem
+            $osIdentity = @{caption=$osInfo.Caption; version=$osInfo.Version; build=$osInfo.BuildNumber; product_type=$osInfo.ProductType; architecture=$osInfo.OSArchitecture; process_arch=[System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString(); native_arch=[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()}
+            if ('${{ inputs.target }}' -eq 'windows-11-arm' -and ($osInfo.Caption -notmatch 'Windows 11' -or $osInfo.ProductType -ne 1)) { throw 'The requested Windows 11 desktop VM was not provided' }
+          }
+          @{slicer_version='5.12.0'; os_identity=$osIdentity; requested_target='${{ inputs.target }}'; slicer_architecture='x64'; package_url=$url; sha512=$sha; runner_os=$env:RUNNER_OS; image_version=$env:ImageVersion; github_sha=$env:GITHUB_SHA; phase=$env:ARMINS_TEST_PHASE; slicer_pip_installs=@(); cache_used=$false; windows_graphics='bundled Qt software OpenGL for GPU-less VM'} | ConvertTo-Json | Set-Content (Join-Path $out 'cloud-runtime.json')
       - name: Download public AFNI inputs for native load tests
         if: inputs.phase != 'design'
         run: |
@@ -117,6 +130,10 @@ jobs:
           if (-not (Test-Path -LiteralPath $receiptPath)) { throw "No test receipt; launcher exit $code" }
           $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
           if ($code -ne 0 -or $receipt.status -ne 'passed') { throw "Native test failed: $($receipt.error); launcher exit $code" }
+          if ($env:ARMINS_TEST_PHASE -eq 'visual') {
+            $graphicsErrors = @(Get-ChildItem -LiteralPath $env:ARMINS_TEST_OUTPUT -Filter '*.log' | Select-String -Pattern 'GLSL.*not supported|Failed to create context|Could not create shader|QOpenGLContext creation failed')
+            if ($graphicsErrors.Count -gt 0) { throw "Slicer graphics errors in logs: $($graphicsErrors.Count); inspect artifacts" }
+          }
           $receipt | ConvertTo-Json -Depth 30
       - name: Keep small logs, receipts and GUI screenshots
         if: always()

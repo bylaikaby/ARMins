@@ -2,6 +2,20 @@
 
 One consolidated history. README.md is the operator guide.
 
+## 0.7.5 - 2026-10-23 (local/unreleased)
+
+- Add an explicit Windows 11 ARM64 cloud target with OS/build/architecture
+  evidence and x64 Slicer emulation; reject a substituted Server OS.
+- Rename region action to Work on selected regions and use the supplied teal
+  #168a91. Preserve dark text and a pale disabled state. Bilateral region
+  selection now preserves the independent working hemisphere for L/R aliases.
+- Add a visual smoke phase that displays normal Slicer closed surfaces and
+  captures two labelled camera views; gate current-context OpenGL and graphics
+  errors. Rendering stays in Slicer; no separate renderer or user driver changes.
+- Local preflight: 52 synthetic tests, five native design/help checks and 12
+  hierarchy checks passed, including both alias/working-side combinations.
+  Visual and fresh Windows 11 results are recorded after execution.
+
 ## 0.7.4 - 2026-10-22 (local/unreleased)
 
 - Add read-only `doctor` CLI/GUI dependency reports. GUI startup and NIfTI CLI

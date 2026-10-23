@@ -1,6 +1,6 @@
 # ARMins project note
 
-Updated 2026-10-22 | Agent Codex | Asia/Shanghai.
+Updated 2026-10-23 | Agent Codex | Asia/Shanghai.
 
 ## Current status and entry points
 
@@ -37,6 +37,30 @@ operation. Template images remain external references; source data are preserved
   first traceback and Slicer version; cloud startup/import/load paths passed.
 
 ## Operations journal
+
+### 2026-10-23 | Agent Codex | Fresh Windows 11 command/API validation
+
+- Request: test a genuine fresh Windows 11 VM. The subsequent clarification
+  questioned separate 3D rendering because ARMins supplies Slicer commands;
+  focus is now import, dependency readiness, GUI load/edit/mirror/save/reload.
+  A staged dedicated-renderer check was removed before publication. The latest
+  explicit request reinstated a visual check of Slicer's own display: labelled
+  two-camera images, with graphics errors recorded separately. No ARMins engine
+  or user system-driver change is included.
+- Available hosted target is Windows 11 ARM64 with x64 Slicer emulation. Actual
+  caption/build/ProductType and native/process architecture are recorded, with
+  a gate against substituting Server. This does not certify native x64 Windows11.
+- Local preflight: 52 synthetic and five GUI/help checks passed. An initial
+  desktop sandbox temp-directory denial was resolved by using workspace-local
+  test temp files outside that restricted execution context; no code fix needed.
+- UI follow-up: exact supplied teal #168a91 and Work on selected regions label.
+  Region profiles remain bilateral; choosing an L/R search alias now preserves
+  the independently chosen working hemisphere. Native regression covers both
+  L-alias/R-working and R-alias/L-working choices with identical group identity.
+- Current version0.7.5 leaves numeric/atlas functions unchanged; GUI selection
+  behavior and test workflow change. Local52 synthetic/design5/hierarchy12 checks
+  passed. Windows 11 cloud and final visual phase remain pending.
+
 
 ### 2026-10-22 | Agent Codex | Dependency checks and isolated CLI environment
 

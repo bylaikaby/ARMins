@@ -1,7 +1,7 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.7.4 (local/unreleased)
-Last updated: 2026-10-22
+Version: 0.7.5 (local/unreleased)
+Last updated: 2026-10-23
 Change history: CHANGELOG.md
 Status: experimental
 
@@ -29,7 +29,7 @@ try:
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.7.4 (local/unreleased)"
+VERSION = "0.7.5 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):
@@ -1465,10 +1465,10 @@ def _apply_gui_theme(dialog):
         }
         QPushButton[arminsRole="primary"]:hover { background: #126b78; }
         QPushButton[arminsRole="region"] {
-            background: #6f4a9e; color: #ffffff; border-color: #6f4a9e;
+            background: #168a91; color: #ffffff; border-color: #168a91;
             font-weight: bold;
         }
-        QPushButton[arminsRole="region"]:hover { background: #583780; }
+        QPushButton[arminsRole="region"]:hover { background: #126b78; }
         QPushButton[arminsRole="mirror"] {
             background: #263746; color: #f4f7f9; border-color: #263746;
             font-weight: bold;
@@ -1484,7 +1484,7 @@ def _apply_gui_theme(dialog):
             background: #e9eef2; color: #334a59; border: 1px solid #d9e3e9;
         }
         QPushButton[arminsRole="region"]:disabled {
-            background: #eee8f5; color: #59416f; border: 1px solid #cdbfdf;
+            background: #e5f2f3; color: #126b78; border: 1px solid #a9cdd1;
         }
     """)
 
@@ -1666,7 +1666,7 @@ def show_gui():
     hierarchy_results = qt.QComboBox(dialog)
     hierarchy_results.setObjectName("ARMHierarchyResults")
     form.addRow("Search results:", hierarchy_results)
-    use_region_button = qt.QPushButton("Use selected region (pending)", dialog)
+    use_region_button = qt.QPushButton("Work on selected regions", dialog)
     use_region_button.setObjectName("UseSelectedRegionButton")
     use_region_button.setProperty("arminsRole", "region")
     form.addRow(use_region_button)
@@ -1710,7 +1710,7 @@ def show_gui():
             if not hits:
                 region_preview.setText("No matches. Refine the query or side/level filter.")
             else:
-                region_preview.setText(f"{len(hits)} candidates found. Select one result, then use it explicitly.")
+                region_preview.setText(f"{len(hits)} candidates found. Select one result, then click Work on selected regions. Both hemispheres are included.")
         except Exception as exc:
             hierarchy_results.clear()
             region_preview.setText(f"Hierarchy search failed: {exc}")
@@ -1731,12 +1731,18 @@ def show_gui():
                 resolver = resolver_type.from_file(table_path)
                 PENDING_GUI_PROFILE = resolver.profile_for(
                     hit["index"], hit["level"], hit["side"], namespace=hit["namespace"])
+                # A region is bilateral; selecting its L/R search alias must not
+                # override the separately chosen working hemisphere.
+                if PENDING_GUI_PROFILE["working_side"] != side_combo.currentText:
+                    other = PENDING_GUI_PROFILE["counterpart"]
+                    PENDING_GUI_PROFILE = resolver.profile_for(
+                        other["index"], other["level"], side_combo.currentText,
+                        namespace=other["namespace"])
                 profile = _validated_profile(PENDING_GUI_PROFILE)
-                side_combo.setCurrentIndex(0 if profile["working_side"] == "L" else 1)
                 left_ids = [str(item["index"]) for item in profile["left_leaves"]]
                 right_ids = [str(item["index"]) for item in profile["right_leaves"]]
                 region_preview.setText(
-                    f"Pending {profile['selected']['abbreviation']} L{profile['selected']['level']} "
+                    f"Both hemispheres selected: level {profile['selected']['level']} "
                     f"({profile['selected']['full_name']}); left {len(left_ids)} L6 IDs: {','.join(left_ids)}; "
                     f"right {len(right_ids)} L6 IDs: {','.join(right_ids)}. No scene nodes changed.")
             status.setText("Pending region settings changed. Validate and load groups to apply them.")
@@ -1753,7 +1759,7 @@ def show_gui():
         if region_mode.currentIndex == 0:
             region_preview.setText("Insula preset selected. Its historical bilateral groups will load.")
         else:
-            region_preview.setText("Search the external ARM hierarchy table, choose one result, then use it explicitly.")
+            region_preview.setText("Search the external ARM hierarchy table, choose one result, then click Work on selected regions. Both hemispheres are included.")
         status.setText("Region mode changed. Validate and load groups to apply the pending settings.")
     region_mode.currentIndexChanged.connect(mode_changed)
     def hierarchy_changed(*_):

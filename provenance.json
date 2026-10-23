@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
-  "recorded_date": "2026-10-22",
-  "tool_version": "0.7.4 (local/unreleased)",
+  "recorded_date": "2026-10-23",
+  "tool_version": "0.7.5 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -32,20 +32,20 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "db42390819c8d567c2fd9ebe72d4d003ce8189e72b1d5defb4a88b9cd9bd7fa9",
-      "bytes": 27850,
+      "sha256": "ce910e269959df909b3ae4d4b4f4f9b9029a37fd909e67e19957dfc65c3c6102",
+      "bytes": 28630,
       "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "b794bbb6a9335b58f53fe61fbec04d120dcd2dc37e2d45286cd2e5d6077cfc02",
-      "bytes": 105916,
-      "inputs": "Published 0.7.3 plus read-only dependency report/startup/CLI preflight; scientific functions AST unchanged."
+      "sha256": "fa8ac68021aae0614f87aca995f6a825dae870ae3e9e359a158033d7392c62fc",
+      "bytes": 106391,
+      "inputs": "Published0.7.4 plus teal Work on selected regions action and independent working-hemisphere preservation for bilateral selection; numeric/atlas algorithms unchanged."
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "fc5266b983f324addeb5a8cf6f794d31403137d99ab1335f6734ec6037cbac4a",
-      "bytes": 5860,
+      "sha256": "217dc9ad64ee2e7263acf8c685c23fc9b1ceb2d9755b634aee7010fb2bdc3c5a",
+      "bytes": 6732,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,15 +74,15 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "133c1faee676a3d59180b38650bfbcad96935123fcb94ee74188e12f8e4514b9",
-      "bytes": 11612,
+      "sha256": "4b5046796f0a61cee14f22e068b8a23a3776a2ec52b81915b9604485ac601926",
+      "bytes": 13219,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
       "sha256": "e6f6228a3f0e95445955bfa069e1e58e89929688b84421e0cf0511bfc719f5d1",
       "bytes": 59461,
-      "inputs": "Actual native 0.7.4 Slicer help capture, empty inputs, no private data."
+      "inputs": "Actual native 0.7.5 setup help, blank inputs."
     },
     "tests/test_editor.py": {
       "purpose": "Synthetic scope/input/editor compatibility regression tests.",
@@ -104,8 +104,8 @@
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
-      "sha256": "abc166157a0e78011b7abcbceea599e56bc5a8f140b8b195a1ffe5752a506dfd",
-      "bytes": 32160,
+      "sha256": "5ecaec075f0b4441eeb85e96f0e4609624b8db00366f5ac9815f2fc41bc57a52",
+      "bytes": 39585,
       "inputs": "Registered baseline and standalone changes"
     },
     "arm_hierarchy.py": {
@@ -128,15 +128,15 @@
     },
     "docs/editor.png": {
       "purpose": "Native versioned GUI screenshot for README.",
-      "inputs": "Actual native 0.7.4 Slicer 5.12.0 design phase, empty inputs and successful automatic GUI dependency preflight.",
-      "sha256": "186c2f9927b63e707e6574f6541703c31ba0ceb013af31dd8f73084723284431",
-      "bytes": 108369
+      "inputs": "Actual native0.7.5 hierarchy-mode GUI; requested teal button enabled, blank paths; no scene changes.",
+      "sha256": "3f51d0c515d3c2135c1369c9cf89ffbc241131867e4fe29aa59af9691aaec873",
+      "bytes": 112632
     },
     ".github/workflows/slicer-cloud.yml": {
       "purpose": "Manual fresh cloud-machine Slicer import/design and public-input native checks.",
       "inputs": "Official Slicer 5.12.0 download-page SHA512 values; official AFNI symmetric v2.1 archive with registered input SHA256; existing native harness.",
-      "sha256": "77e7e07598e31a200d203495c93962e9980bf1ac7a251df16c19c960c2d9ae3f",
-      "bytes": 7322
+      "sha256": "af0e1c219e948b6ab21215e361179ee3a6f532948f7d239087e114da20693f23",
+      "bytes": 8836
     },
     "environment.yml": {
       "purpose": "Optional isolated Conda CLI runtime, not a GUI/Slicer installer.",
@@ -636,7 +636,7 @@
       "correction": "Install libxcb-shape0, libxcb-xfixes0 and documented qt5dxcb-plugin Linux runtime prerequisites."
     }
   },
-  "validation": {
+  "dependency_cloud_validation_0_7_4": {
     "tested_module_sha256": "b794bbb6a9335b58f53fe61fbec04d120dcd2dc37e2d45286cd2e5d6077cfc02",
     "synthetic_tests": {
       "passed": 52,
@@ -745,6 +745,60 @@
       "passed_per_target": 52,
       "numpy": "2.5.4",
       "nibabel": "5.4.2"
+    }
+  },
+  "validation": {
+    "tested_module_sha256": "fa8ac68021aae0614f87aca995f6a825dae870ae3e9e359a158033d7392c62fc",
+    "synthetic_tests": {
+      "passed": 52,
+      "failed": 0
+    },
+    "native_local_design": {
+      "slicer": "5.12.0",
+      "status": "passed",
+      "checks": [
+        "dialog-local VisPa palette and redundant L/R colour-direction cues leave scene and Slicer theme unchanged",
+        "dark inactive text and placeholder; teal region action retains a pale disabled state",
+        "setup help opens without scene changes and exposes official links and copyable install command",
+        "native setup-help Close button accepts the Qt clicked signal and closes the dialog",
+        "main title/banner and help title show the authoritative version; mirror controls retained; screenshot saved"
+      ],
+      "teal_button_and_label_visually_reviewed": true
+    },
+    "windows_11": {
+      "status": "pending",
+      "target": "windows-11-arm",
+      "architecture_scope": "Windows11 ARM64 with x64 Slicer emulation; not native x64 Windows11",
+      "scope": "Fresh VM commands/API and GUI workflow, plus actual Slicer 3D captures for model visual review; no separate renderer.",
+      "os_guard": "Actual caption includes Windows 11 and ProductType=1; native/process architecture recorded."
+    },
+    "native_local_hierarchy": {
+      "status": "passed",
+      "passed": 12,
+      "checks": [
+        "real ARM CSV resolves ACC L3 to five explicit bilateral leaves with stable paired profile identity",
+        "preloaded insula groups and Segment Editor state captured before hierarchy selection",
+        "bilateral region selection preserves working hemisphere for both L and R search aliases",
+        "GUI hierarchy search and pending selection do not mutate MRML scene",
+        "hierarchy GUI load creates both five-leaf groups, keeps scope geometry, and initially focuses the selected left group",
+        "paired right-side selection reuses the same groups and focuses the right working group",
+        "mirror uses the CSV-derived bilateral ID map; tagged helper is excluded from partition, hidden, and preserved",
+        "right-to-left hierarchy mirror round-trips every selected L6 leaf and helper mask",
+        "hierarchy candidate save/reload retains the profile receipt and helper annotation",
+        "native hierarchy mirror button creates a separate candidate and enables candidate saving",
+        "hierarchy mirroring leaves pre-existing insula working groups and Segment Editor references/mask/effect unchanged",
+        "registered template, atlas, and hierarchy CSV hashes are unchanged"
+      ]
+    },
+    "native_local_visual": {
+      "status": "passed",
+      "checks": [
+        "normal Slicer display has sixteen nonempty bilateral ARM6 parcel surfaces; scope envelopes hidden",
+        "actual two-camera 3D montage saved; current context reports OpenGL >=3.2; visual review still required",
+        "visual Slicer commands leave source template and label bytes unchanged"
+      ],
+      "screenshot_visually_reviewed": true,
+      "scope": "Local Windows11 workstation, not a fresh VM; Slicer/VTK surfaces via standard commands, camera images and source preservation."
     }
   }
 }

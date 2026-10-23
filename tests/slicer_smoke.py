@@ -1,7 +1,7 @@
 """Isolated native Slicer integration check for ARMins.
 
-Version: 0.7.4 (local/unreleased)
-Last updated: 2026-10-22
+Version: 0.7.5 (local/unreleased)
+Last updated: 2026-10-23
 Change history: CHANGELOG.md
 Status: candidate
 
@@ -15,7 +15,7 @@ use --no-main-window. Use a separate testing process and an isolated scene.
 Required environment: ARMINS_TEST_OUTPUT (new/empty folder), ARMINS_TEMPLATE,
 and ARMINS_ATLAS (registered local 3-D L6 input). Hierarchy phase additionally
 requires ARMINS_HIERARCHY pointing to the external provider CSV. Optional:
-ARMINS_TEST_PHASE ('design', 'behavior', or 'hierarchy'; default behavior),
+ARMINS_TEST_PHASE ('design', 'behavior', 'hierarchy', or 'visual'; default behavior),
 ARMINS_OUTPUT_DIR. Set ARMINS_TEST_IMPORT=1 to exercise documented module
 import from an unrelated working directory, without pip-installing into Slicer.
 """
@@ -32,6 +32,116 @@ import traceback
 
 import numpy as np
 import slicer
+
+
+def _visual_check(ns, output, receipt, passed):
+    """Display normal Slicer segmentation surfaces and save actual 3D views."""
+    import qt
+    import vtk
+    import re
+    glob = ns['run'].__globals__
+    paths = [Path(glob['REF_PATH']), Path(glob['ARM_PATH'])]
+    hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    groups = ns['run'](working_side='L')
+    layout = slicer.app.layoutManager()
+    layout.setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutOneUp3DView)
+    slicer.util.mainWindow().resize(1280, 900)
+    view = layout.threeDWidget(0).threeDView()
+    view.mrmlViewNode().SetBackgroundColor(0.04, 0.07, 0.10)
+    view.mrmlViewNode().SetBackgroundColor2(0.04, 0.07, 0.10)
+    view.mrmlViewNode().SetBoxVisible(False)
+    view.mrmlViewNode().SetAxisLabelsVisible(False)
+    view.mrmlViewNode().SetOrientationMarkerType(slicer.vtkMRMLAbstractViewNode.OrientationMarkerTypeCube)
+    surfaces = {}
+    bounds = [float('inf'), -float('inf'), float('inf'), -float('inf'), float('inf'), -float('inf')]
+    for side, node in groups.items():
+        assert node.CreateClosedSurfaceRepresentation()
+        display = node.GetDisplayNode()
+        display.SetVisibility3D(True)
+        display.SetAllSegmentsVisibility3D(True)
+        display.SetSegmentVisibility3D(glob['SCOPE_IDS'][side], False)
+        data = node.GetSegmentation()
+        for i in range(data.GetNumberOfSegments()):
+            sid = data.GetNthSegmentID(i)
+            if sid == glob['SCOPE_IDS'][side]:
+                continue
+            poly = vtk.vtkPolyData()
+            assert node.GetClosedSurfaceRepresentation(sid, poly)
+            assert poly.GetNumberOfPoints() and poly.GetNumberOfCells()
+            surfaces[f'{side}:{sid}'] = {'points': poly.GetNumberOfPoints(), 'cells': poly.GetNumberOfCells()}
+            parcel_bounds = poly.GetBounds()
+            for axis in range(3):
+                bounds[2 * axis] = min(bounds[2 * axis], parcel_bounds[2 * axis])
+                bounds[2 * axis + 1] = max(bounds[2 * axis + 1], parcel_bounds[2 * axis + 1])
+    assert len(surfaces) == 16
+    receipt['surfaces'] = surfaces
+    passed('normal Slicer display has sixteen nonempty bilateral ARM6 parcel surfaces; scope envelopes hidden')
+    slicer.app.processEvents()
+    window = view.renderWindow()
+    renderer = window.GetRenderers().GetFirstRenderer()
+    renderer.ResetCamera(bounds)
+    renderer.ResetCameraClippingRange(bounds)
+
+    def capture(path):
+        view.forceRender()
+        slicer.app.processEvents()
+        grab = vtk.vtkWindowToImageFilter()
+        grab.SetInput(window)
+        grab.SetInputBufferTypeToRGB()
+        grab.ReadFrontBufferOff()
+        grab.Update()
+        writer = vtk.vtkPNGWriter()
+        writer.SetFileName(str(path))
+        writer.SetInputConnection(grab.GetOutputPort())
+        writer.Write()
+        assert path.is_file() and path.stat().st_size > 0
+
+    first, second = output / 'camera1.png', output / 'camera2.png'
+    capture(first)
+    receipt['opengl_capabilities'] = window.ReportCapabilities()
+    receipt['opengl_supported'] = bool(window.SupportsOpenGL())
+    receipt['opengl_support_message'] = window.GetOpenGLSupportMessage()
+    receipt['surface_bounds_ras'] = bounds
+    camera = renderer.GetActiveCamera()
+    camera.Azimuth(40)
+    camera.Elevation(20)
+    camera.OrthogonalizeViewUp()
+    renderer.ResetCameraClippingRange()
+    capture(second)
+    images = [qt.QImage(str(first)), qt.QImage(str(second))]
+    assert all(not image.isNull() for image in images)
+    width, height = images[0].width(), images[0].height()
+    montage = qt.QImage(width * 2, height + 145, qt.QImage.Format_RGB32)
+    montage.fill(qt.QColor('#10202d'))
+    painter = qt.QPainter(montage)
+    painter.setPen(qt.QColor('#ffffff'))
+    painter.setFont(qt.QFont('Arial', 12))
+    painter.drawText(12, 24, 'Camera 1 | bilateral insula | RAS orientation cube')
+    painter.drawText(width + 12, 24, 'Camera 2 | rotated 40 degrees, elevated 20 degrees')
+    painter.drawImage(0, 36, images[0])
+    painter.drawImage(width, 36, images[1])
+    for i, (name, _, color) in enumerate(glob['ARM_TYPES']):
+        x, y = 12 + (i % 4) * (width * 2 // 4), height + 58 + (i // 4) * 24
+        painter.fillRect(x, y - 12, 14, 14, qt.QColor.fromRgbF(*color))
+        painter.drawText(x + 22, y, name + ' (L/R)')
+    painter.drawText(12, height + 122, 'Space: NMT v2.1 symmetric | ARM6 provider labels | technical visual QC; anatomy not accepted')
+    painter.end()
+    image_path = output / 'visual_3d.png'
+    assert montage.save(str(image_path))
+    receipt['screenshot'] = str(image_path)
+    receipt['screenshot_sha256'] = hashlib.sha256(image_path.read_bytes()).hexdigest()
+    receipt['camera_png_hashes'] = [hashlib.sha256(p.read_bytes()).hexdigest() for p in [first, second]]
+    assert receipt['camera_png_hashes'][0] != receipt['camera_png_hashes'][1], 'camera views did not change'
+    first.unlink()
+    second.unlink()
+    version = re.search(r'OpenGL version string:\s*(\d+)\.(\d+)', receipt['opengl_capabilities'])
+    # Slicer's backend may report its separate SupportsOpenGL probe as 'Not tested yet'.
+    # Gate on the current rendered context's version, image readback and process shader log.
+    assert version and tuple(map(int, version.groups())) >= (3, 2), receipt['opengl_capabilities']
+    passed('actual two-camera 3D montage saved; current context reports OpenGL >=3.2; visual review still required')
+    assert hashes == {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    receipt['immutable_input_hashes'] = hashes
+    passed('visual Slicer commands leave source template and label bytes unchanged')
 
 
 def main():
@@ -96,13 +206,22 @@ def main():
             passed('dialog-local VisPa palette and redundant L/R colour-direction cues leave scene and Slicer theme unchanged')
             use_region = dialog.findChild(qt.QPushButton, 'UseSelectedRegionButton')
             assert use_region.property('arminsRole') == 'region' and not use_region.enabled
-            assert '#59416f' in dialog.styleSheet and '#334a59' in dialog.styleSheet
+            assert '#e5f2f3' in dialog.styleSheet and '#334a59' in dialog.styleSheet
             search = dialog.findChild(qt.QLineEdit, 'ARMHierarchySearch')
             assert search.palette.color(qt.QPalette.Disabled, qt.QPalette.PlaceholderText).name() == '#334a59'
-            passed('dark inactive text and placeholder; distinct purple region action retains disabled state')
+            passed('dark inactive text and placeholder; teal region action retains a pale disabled state')
             image_path = output / 'mirror_dialog.png'
             assert dialog.grab().save(str(image_path))
             receipt['screenshot'] = str(image_path)
+            mode = dialog.findChild(qt.QComboBox, 'RegionGroupMode')
+            mode.setCurrentIndex(1)
+            slicer.app.processEvents()
+            assert use_region.enabled and use_region.text == 'Work on selected regions'
+            assert slicer.mrmlScene.GetNumberOfNodes() == scene_before_side
+            hierarchy_image = output / 'hierarchy_controls.png'
+            assert dialog.grab().save(str(hierarchy_image))
+            receipt['hierarchy_controls_screenshot'] = str(hierarchy_image)
+            mode.setCurrentIndex(0)
             labels = [button.text for button in dialog.findChildren(qt.QPushButton)]
             assert any('Mirror selected side' in label for label in labels), labels
             assert any('Save mirrored candidate' in label for label in labels), labels
@@ -148,6 +267,8 @@ def main():
             receipt['buttons'] = labels
             passed('main title/banner and help title show the authoritative version; mirror controls retained; screenshot saved')
             dialog.close()
+        elif phase == 'visual':
+            _visual_check(ns, output, receipt, passed)
         elif phase == 'hierarchy':
             import vtk
             hierarchy_path = Path(os.environ['ARMINS_HIERARCHY']).resolve()
@@ -220,7 +341,7 @@ def main():
             search_button = next(button for button in dialog.findChildren(qt.QPushButton)
                                  if button.text == 'Search')
             use_button = next(button for button in dialog.findChildren(qt.QPushButton)
-                              if button.text == 'Use selected region (pending)')
+                              if button.text == 'Work on selected regions')
             hierarchy_edit.setText(str(hierarchy_path))
             mode.setCurrentIndex(1)
             search_edit.setText('CL_ACC')
@@ -230,8 +351,26 @@ def main():
             slicer.app.processEvents()
             assert results.count == 1 and 'CL_ACC' in results.itemText(0)
             assert slicer.mrmlScene.GetNumberOfNodes() == scene_before_search
+            working_side = dialog.findChild(qt.QComboBox, 'WorkingHemisphere')
+            working_side.setCurrentIndex(1)
             use_button.click()
             slicer.app.processEvents()
+            assert working_side.currentText == 'R'
+            assert glob['PENDING_GUI_PROFILE']['working_side'] == 'R'
+            assert glob['PENDING_GUI_PROFILE']['profile_hash'] == profile_l['profile_hash']
+            # The paired search alias also preserves an independently chosen L side.
+            working_side.setCurrentIndex(0)
+            search_edit.setText('CR_ACC')
+            search_side.setCurrentIndex(2)
+            search_button.click()
+            slicer.app.processEvents()
+            assert results.count == 1 and 'CR_ACC' in results.itemText(0)
+            use_button.click()
+            slicer.app.processEvents()
+            assert working_side.currentText == 'L'
+            assert glob['PENDING_GUI_PROFILE']['working_side'] == 'L'
+            assert glob['PENDING_GUI_PROFILE']['profile_hash'] == profile_l['profile_hash']
+            passed('bilateral region selection preserves working hemisphere for both L and R search aliases')
             assert slicer.mrmlScene.GetNumberOfNodes() == scene_before_search
             assert editor_snapshot() == baseline_editor_state
             assert baseline_mask_hashes() == baseline_masks
@@ -502,7 +641,7 @@ def main():
             receipt['immutable_input_hashes'] = hashes_after
             passed('registered source image and atlas hashes remain unchanged')
         else:
-            raise ValueError('phase must be design, behavior, or hierarchy')
+            raise ValueError('phase must be design, behavior, hierarchy, or visual')
         receipt['status'] = 'passed'
     except Exception:
         receipt['status'] = 'failed'
