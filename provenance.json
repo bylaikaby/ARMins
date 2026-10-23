@@ -32,8 +32,8 @@
   "files": {
     "README.md": {
       "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "ce910e269959df909b3ae4d4b4f4f9b9029a37fd909e67e19957dfc65c3c6102",
-      "bytes": 28630,
+      "sha256": "f7521f914cf7ce3271089ebd8d9b792c12c135e3009c01bb8050838a2b5223d9",
+      "bytes": 30301,
       "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
     },
     "armins.py": {
@@ -44,8 +44,8 @@
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "3995ea4a10cc1b281903e3612e9c725a35701d4e6c4fe34f7b54eaf2ff6363db",
-      "bytes": 6962,
+      "sha256": "5ff823df0a1ff383c805166b88df35eb415e1a310ff6f74a2fc545f8756f8d6e",
+      "bytes": 7194,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,8 +74,8 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "e9e8ec292c9d158668b03313d770be1a82b29f6d821d06d7e052fcc1719fdc96",
-      "bytes": 13784,
+      "sha256": "7e76b3c8b7bca83f6aa880c228f4a3dd647947de09504a16af7baf65945ef321",
+      "bytes": 14633,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
@@ -135,8 +135,8 @@
     ".github/workflows/slicer-cloud.yml": {
       "purpose": "Manual fresh cloud-machine Slicer import/design and public-input native checks.",
       "inputs": "Official Slicer 5.12.0 download-page SHA512 values; official AFNI symmetric v2.1 archive with registered input SHA256; existing native harness.",
-      "sha256": "887bdc2bda55a30a6362d6a55f63b65a6e34fe175ecf99e21ef2c7003e658b85",
-      "bytes": 11535
+      "sha256": "ac9ddd4ed4df9d5ab001ea72651909a897023a2aae23defc55626bc5f09bf1b1",
+      "bytes": 8837
     },
     "environment.yml": {
       "purpose": "Optional isolated Conda CLI runtime, not a GUI/Slicer installer.",
@@ -766,7 +766,7 @@
       "teal_button_and_label_visually_reviewed": true
     },
     "windows_11": {
-      "status": "pending",
+      "status": "functional passed; stock visual failed; separate Mesa experiment failed",
       "target": "windows-11-arm",
       "architecture_scope": "Windows11 ARM64 with x64 Slicer emulation; not native x64 Windows11",
       "scope": "Fresh VM commands/API and GUI workflow, plus actual Slicer 3D captures for model visual review; no separate renderer.",
@@ -774,7 +774,38 @@
       "stock_visual": {
         "status": "failed",
         "run": "https://github.com/bylaikaby/ARMins/actions/runs/39900188928",
-        "renderer": "Mesa12 llvmpipe; OpenGL3.0; unsupported GLSL1.50; blank camera images"
+        "renderer": "Mesa12 llvmpipe; OpenGL3.0; unsupported GLSL1.50; blank camera images",
+        "screenshots_reviewed": true
+      },
+      "actual_os": {
+        "process_arch": "Arm64",
+        "caption": "Microsoft Windows 11 Enterprise",
+        "version": "10.0.26200",
+        "architecture": "ARM 64-bit Processor",
+        "native_arch": "Arm64",
+        "build": "26200",
+        "product_type": 1
+      },
+      "design": {
+        "run": "https://github.com/bylaikaby/ARMins/actions/runs/39899939662",
+        "status": "passed",
+        "checks": 5,
+        "screenshots_reviewed": true
+      },
+      "hierarchy": {
+        "run": "https://github.com/bylaikaby/ARMins/actions/runs/39900184868",
+        "status": "passed",
+        "checks": 12,
+        "source_sha256": "fa8ac68021aae0614f87aca995f6a825dae870ae3e9e359a158033d7392c62fc",
+        "source_input_hashes": "unchanged"
+      },
+      "mesa_experiment": {
+        "status": "failed before test receipt",
+        "run": "https://github.com/bylaikaby/ARMins/actions/runs/39900638123",
+        "mesa_version": "26.2.4",
+        "archive_sha256": "351fc8c8b695878ffb3eaa044b3ead08672a48b1a045e3c3e3975811df0f6695",
+        "scope": "Disposable app-local Slicer/bin only; no host/global/user-PC drivers changed",
+        "disposition": "Unsuccessful optional workflow runtime removed; no workaround recommended"
       }
     },
     "native_local_hierarchy": {
@@ -804,6 +835,16 @@
       ],
       "screenshot_visually_reviewed": true,
       "scope": "Local Windows11 workstation, not a fresh VM; Slicer/VTK surfaces via standard commands, camera images and source preservation."
+    },
+    "fresh_pip_conda": {
+      "run": "https://github.com/bylaikaby/ARMins/actions/runs/39899937121",
+      "status": "passed",
+      "checks_per_job": 52,
+      "jobs": [
+        "pip Windows",
+        "pip Ubuntu",
+        "Conda Ubuntu"
+      ]
     }
   }
 }

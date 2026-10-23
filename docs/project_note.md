@@ -26,7 +26,7 @@ operation. Template images remain external references; source data are preserved
 
 ## Current verification and review
 
-- Current source: 0.7.4; CLI Conda/pip and native Windows/Ubuntu runs above are
+- Current source: 0.7.5; current and historical validation runs below are
   tied to the exact armins.py hash in provenance.json. No local config/cache or
   atlas data was copied to cloud VMs; only public provider downloads were used.
 - Review in order: (1) follow README's GUI versus CLI dependency path; `doctor`
@@ -59,7 +59,26 @@ operation. Template images remain external references; source data are preserved
   L-alias/R-working and R-alias/L-working choices with identical group identity.
 - Current version0.7.5 leaves numeric/atlas functions unchanged; GUI selection
   behavior and test workflow change. Local52 synthetic/design5/hierarchy12 checks
-  passed. Windows 11 cloud and final visual phase remain pending.
+  passed. The later completion entry below records Windows11 outcomes.
+
+- Fresh Windows11 design run39899939662 passed five checks; actual GUI reviewed.
+  Windows11 Enterprise build26200 ARM64/x64 Slicer emulation confirmed. Stock
+  visual run39900188928 failed: Mesa12/OpenGL3.0, GLSL1.50 rejected and identical
+  blank camera images. This is a genuine failed graphics test, retained as such.
+  Added a separate optional pinned Mesa26.2.4 app-local compatibility experiment
+  in the disposable VM, following its provider per-app deployment layout. No
+  application math, user PC drivers, global registry or Slicer dependencies change.
+- Final results/correction: hierarchy run39900184868 passed12. Mesa experiment
+  run39900638123 exited before producing a test receipt, so its optional workflow
+  runtime was removed. Stock graphics failure remains explicit. Local Intel
+  UHD770 OpenGL3.2 rendered16 parcels and two views (three checks), visually
+  reviewed; this does not substitute for fresh-VM rendering acceptance.
+- Delivery/review: (1) README editor screenshot: dark text and teal Work on
+  selected regions. (2) Windows11 Actions receipts: GUI5 and hierarchy12 pass,
+  stock visual fail. (3) Review actual atlas/mirror boundaries in Slicer on a
+  supported graphics setup. Native x64 Windows11 VM and original startup
+  traceback remain unavailable; prior guide/download/hierarchy/symmetry/version
+  requests remain satisfied. No biological/anatomical acceptance is asserted.
 
 
 ### 2026-10-22 | Agent Codex | Dependency checks and isolated CLI environment
@@ -206,11 +225,3 @@ operation. Template images remain external references; source data are preserved
    boundaries. Expect zero partition errors and preserved working nodes.
 3. Save to a new `.seg.nrrd`, reload, and inspect parcel identity and extent.
    Judge anatomy independently of the technical checks.
-
-- Fresh Windows11 design run39899939662 passed five checks; actual GUI reviewed.
-  Windows11 Enterprise build26200 ARM64/x64 Slicer emulation confirmed. Stock
-  visual run39900188928 failed: Mesa12/OpenGL3.0, GLSL1.50 rejected and identical
-  blank camera images. This is a genuine failed graphics test, retained as such.
-  Added a separate optional pinned Mesa26.2.4 app-local compatibility experiment
-  in the disposable VM, following its provider per-app deployment layout. No
-  application math, user PC drivers, global registry or Slicer dependencies change.

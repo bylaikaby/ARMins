@@ -457,14 +457,31 @@ existing destinations. A supplied 3-D ARM6 file is returned without duplication.
 The manual cloud workflow now also offers `target=windows-11-arm`. This is a
 fresh Windows 11 **ARM64** VM running x64 Slicer through Windows emulation;
 it must not be described as native Intel/AMD Windows 11 validation. The job
-records and checks the actual desktop OS/architecture before startup. Current
-Windows 11 execution is pending. Scope is ARMins commands/API, GUI loading,
+records and checks the actual desktop OS/architecture before startup. Scope is
+ARMins commands/API, GUI loading,
 editing/mirroring and saving. A `visual` phase captures two actual Slicer 3D
 views for visual inspection, using standard Slicer display commands. It adds no
 ARMins rendering engine; graphics errors are checked separately from data/API tests.
 
 
-Current 0.7.4 verification:
+Current 0.7.5 results (Slicer 5.12.0):
+
+| Environment/check | Observed result |
+|---|---|
+| Fresh Windows 11 Enterprise build 26200, ARM64/x64 Slicer emulation | [Five GUI checks passed; screenshots reviewed](https://github.com/bylaikaby/ARMins/actions/runs/39899939662) |
+| Same fresh Windows 11 target, downloaded public NMT/ARM inputs | [12 hierarchy/load/mirror/save-reload checks passed](https://github.com/bylaikaby/ARMins/actions/runs/39900184868); both L/R aliases preserve the independent working hemisphere; source hashes unchanged |
+| Same fresh Windows 11 target, stock bundled software OpenGL | [Visual test failed](https://github.com/bylaikaby/ARMins/actions/runs/39900188928): OpenGL3.0/Mesa12 rejects GLSL1.50; two blank, identical camera captures |
+| Separate disposable Windows 11 VM with app-local Mesa26.2.4 | [Diagnostic failed](https://github.com/bylaikaby/ARMins/actions/runs/39900638123): Slicer exited before a test receipt. This runtime option was removed; no driver workaround is recommended |
+| Local Windows 11 workstation, Intel UHD770 | Three visual checks passed; sixteen parcel surfaces displayed in Slicer's own 3D view and two rotated camera captures were visually reviewed. This is not fresh-VM evidence |
+| Fresh pip Windows/Ubuntu and Conda Ubuntu | [52 synthetic tests per job passed](https://github.com/bylaikaby/ARMins/actions/runs/39899937121) |
+
+The GUI and atlas display are inside **3D Slicer**. ARMins issues normal Slicer
+commands; it has no separate renderer. Fresh Windows 11 functional validation
+passed, but rendering on this GPU-less VM remains unsupported. Native Intel/AMD
+Windows 11 VM graphics and the user's original startup error remain unverified.
+
+Historical 0.7.4 verification:
+
 
 | Environment | Installation | Observed result |
 |---|---|---|
