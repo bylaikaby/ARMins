@@ -206,3 +206,11 @@ operation. Template images remain external references; source data are preserved
    boundaries. Expect zero partition errors and preserved working nodes.
 3. Save to a new `.seg.nrrd`, reload, and inspect parcel identity and extent.
    Judge anatomy independently of the technical checks.
+
+- Fresh Windows11 design run39899939662 passed five checks; actual GUI reviewed.
+  Windows11 Enterprise build26200 ARM64/x64 Slicer emulation confirmed. Stock
+  visual run39900188928 failed: Mesa12/OpenGL3.0, GLSL1.50 rejected and identical
+  blank camera images. This is a genuine failed graphics test, retained as such.
+  Added a separate optional pinned Mesa26.2.4 app-local compatibility experiment
+  in the disposable VM, following its provider per-app deployment layout. No
+  application math, user PC drivers, global registry or Slicer dependencies change.

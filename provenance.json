@@ -44,8 +44,8 @@
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "217dc9ad64ee2e7263acf8c685c23fc9b1ceb2d9755b634aee7010fb2bdc3c5a",
-      "bytes": 6732,
+      "sha256": "3995ea4a10cc1b281903e3612e9c725a35701d4e6c4fe34f7b54eaf2ff6363db",
+      "bytes": 6962,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "AGENTS.md": {
@@ -74,8 +74,8 @@
     },
     "docs/project_note.md": {
       "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "4b5046796f0a61cee14f22e068b8a23a3776a2ec52b81915b9604485ac601926",
-      "bytes": 13219,
+      "sha256": "e9e8ec292c9d158668b03313d770be1a82b29f6d821d06d7e052fcc1719fdc96",
+      "bytes": 13784,
       "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
     },
     "docs/atlas_setup.png": {
@@ -135,8 +135,8 @@
     ".github/workflows/slicer-cloud.yml": {
       "purpose": "Manual fresh cloud-machine Slicer import/design and public-input native checks.",
       "inputs": "Official Slicer 5.12.0 download-page SHA512 values; official AFNI symmetric v2.1 archive with registered input SHA256; existing native harness.",
-      "sha256": "af0e1c219e948b6ab21215e361179ee3a6f532948f7d239087e114da20693f23",
-      "bytes": 8836
+      "sha256": "887bdc2bda55a30a6362d6a55f63b65a6e34fe175ecf99e21ef2c7003e658b85",
+      "bytes": 11535
     },
     "environment.yml": {
       "purpose": "Optional isolated Conda CLI runtime, not a GUI/Slicer installer.",
@@ -770,7 +770,12 @@
       "target": "windows-11-arm",
       "architecture_scope": "Windows11 ARM64 with x64 Slicer emulation; not native x64 Windows11",
       "scope": "Fresh VM commands/API and GUI workflow, plus actual Slicer 3D captures for model visual review; no separate renderer.",
-      "os_guard": "Actual caption includes Windows 11 and ProductType=1; native/process architecture recorded."
+      "os_guard": "Actual caption includes Windows 11 and ProductType=1; native/process architecture recorded.",
+      "stock_visual": {
+        "status": "failed",
+        "run": "https://github.com/bylaikaby/ARMins/actions/runs/39900188928",
+        "renderer": "Mesa12 llvmpipe; OpenGL3.0; unsupported GLSL1.50; blank camera images"
+      }
     },
     "native_local_hierarchy": {
       "status": "passed",

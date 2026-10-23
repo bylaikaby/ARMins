@@ -18,6 +18,12 @@ on:
         default: standard
         type: choice
         options: [standard, windows-11-arm]
+      graphics:
+        description: VM-only software OpenGL; Mesa is a separate compatibility test
+        required: true
+        default: bundled
+        type: choice
+        options: [bundled, mesa]
 
 
 permissions:
@@ -88,6 +94,38 @@ jobs:
             if ('${{ inputs.target }}' -eq 'windows-11-arm' -and ($osInfo.Caption -notmatch 'Windows 11' -or $osInfo.ProductType -ne 1)) { throw 'The requested Windows 11 desktop VM was not provided' }
           }
           @{slicer_version='5.12.0'; os_identity=$osIdentity; requested_target='${{ inputs.target }}'; slicer_architecture='x64'; package_url=$url; sha512=$sha; runner_os=$env:RUNNER_OS; image_version=$env:ImageVersion; github_sha=$env:GITHUB_SHA; phase=$env:ARMINS_TEST_PHASE; slicer_pip_installs=@(); cache_used=$false; windows_graphics='bundled Qt software OpenGL for GPU-less VM'} | ConvertTo-Json | Set-Content (Join-Path $out 'cloud-runtime.json')
+      - name: Optional modern Mesa for this disposable Slicer install only
+        if: runner.os == 'Windows' && inputs.graphics == 'mesa'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://github.com/pal1000/mesa-dist-win/releases/download/26.2.4/mesa3d-26.2.4-release-msvc.7z'
+          $sha = '351fc8c8b695878ffb3eaa044b3ead08672a48b1a045e3c3e3975811df0f6695'
+          $archive = Join-Path $env:RUNNER_TEMP 'mesa.7z'
+          $mesa = Join-Path $env:RUNNER_TEMP 'mesa'
+          curl.exe --fail --location --retry 3 --output $archive $url
+          if ($LASTEXITCODE -ne 0) { throw 'Mesa download failed' }
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLower() -ne $sha) { throw 'Mesa checksum mismatch' }
+          7z x $archive "-o$mesa" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'Mesa extraction failed' }
+          $gl = @(Get-ChildItem -LiteralPath $mesa -Recurse -Filter opengl32.dll | Where-Object { $_.Directory.Name -eq 'x64' })
+          if ($gl.Count -ne 1) { throw 'Expected one x64 Mesa desktop OpenGL DLL' }
+          $bin = Join-Path (Split-Path $env:ARMINS_SLICER) 'bin'
+          $old = (Get-FileHash (Join-Path $bin 'opengl32sw.dll') -Algorithm SHA256).Hash.ToLower()
+          $deployed = @{}
+          foreach ($name in @('opengl32.dll','libgallium_wgl.dll','libglapi.dll','dxil.dll')) {
+            $source = Join-Path $gl[0].Directory.FullName $name
+            if (Test-Path -LiteralPath $source) {
+              Copy-Item -LiteralPath $source -Destination (Join-Path $bin $name) -Force
+              $deployed[$name] = (Get-FileHash $source -Algorithm SHA256).Hash.ToLower()
+            }
+          }
+          Copy-Item -LiteralPath $gl[0].FullName -Destination (Join-Path $bin 'opengl32sw.dll') -Force
+          "GALLIUM_DRIVER=llvmpipe" >> $env:GITHUB_ENV
+          $runtimePath = Join-Path $env:ARMINS_TEST_OUTPUT 'cloud-runtime.json'
+          $runtime = Get-Content $runtimePath -Raw | ConvertFrom-Json
+          $runtime.windows_graphics = 'Mesa26.2.4 llvmpipe, app-local DLLs in disposable VM only; not stock bundled graphics'
+          $runtime | ConvertTo-Json -Depth 10 | Set-Content $runtimePath
+          @{version='26.2.4'; url=$url; sha256=$sha; original_bundled_sw_sha256=$old; deployed_dll_sha256=$deployed; scope='Disposable Slicer/bin only; no global driver, registry or user-PC changes'} | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $env:ARMINS_TEST_OUTPUT 'mesa-runtime.json')
       - name: Download public AFNI inputs for native load tests
         if: inputs.phase != 'design'
         run: |

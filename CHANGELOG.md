@@ -12,6 +12,9 @@ One consolidated history. README.md is the operator guide.
 - Add a visual smoke phase that displays normal Slicer closed surfaces and
   captures two labelled camera views; gate current-context OpenGL and graphics
   errors. Rendering stays in Slicer; no separate renderer or user driver changes.
+- Add an explicit optional, checksummed Mesa26.2.4 per-application VM graphics
+  comparison after stock bundled OpenGL3.0 produced blank images. This changes
+  only a disposable CI install; stock and Mesa results remain separate.
 - Local preflight: 52 synthetic tests, five native design/help checks and 12
   hierarchy checks passed, including both alias/working-side combinations.
   Visual and fresh Windows 11 results are recorded after execution.
