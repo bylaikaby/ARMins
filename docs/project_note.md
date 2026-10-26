@@ -32,7 +32,9 @@ operation. Template images remain external references; source data are preserved
   inputs. The source data stay external. Ordinary Python auto-discovers the
   newest stable installed Slicer; an explicit `--slicer` path overrides it.
   The user-requested config is portable as declared UNC syntax, but loading
-  still requires server access or explicit mounted/native inputs. Technical
+  still requires server access or explicit mounted/native inputs. The other
+  PC reported WinError 1326 on the exact template, an SMB logon failure;
+  manual authentication and a successful rerun there remain pending. Technical
   loading/display is distinct from anatomical acceptance.
   Historical 0.7.5 validation below remains tied to its recorded hashes.
 - Review in order: (1) follow README's GUI versus CLI dependency path; `doctor`
@@ -44,11 +46,27 @@ operation. Template images remain external references; source data are preserved
 
 ## Operations journal
 
+### 2026-10-26 | Agent Codex | Cross-PC error identified as SMB logon failure
+
+- The user supplied the other PC's concrete error: `OSError: [WinError 1326]`
+  when Python opened the exact UNC template configured in `atlas_config.json`.
+  This Windows code is `ERROR_LOGON_FAILURE` (user name or password incorrect).
+  The evidence points to SMB authentication for that process/session, not a
+  directory spelling defect. File Explorer reaching the share root does not
+  establish that Python can read the exact file under the same credentials.
+- README now directs the operator to authenticate manually from the same
+  ordinary, non-elevated user session with `net use` and a local password
+  prompt, then rerun Henry. No credentials were requested, stored or used by
+  this agent. The other PC's post-authentication outcome is pending, so its
+  scene is not claimed repaired. Henry 0.1.3 already surfaces the exact I/O
+  error before opening Slicer; no runtime code changed for this finding.
+
 ### 2026-10-26 | Agent Codex | Cross-PC blank startup investigation (Henry 0.1.3)
 
 - User reports Slicer opens with an empty scene on another PC; File Explorer
   can reach the configured UNC atlas root there. No Slicer traceback or version
-  from that PC is available yet, so the specific cause is unconfirmed. Source
+  from that PC was available at this stage; the later WinError 1326
+  observation below resolves the failure category. Source
   review found launcher 0.1.2 opened Slicer before checking its companion
   modules or individual source files; failures in `show()` then appeared only
   in Slicer's Python console/log.

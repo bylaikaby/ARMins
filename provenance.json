@@ -31,9 +31,9 @@
   ],
   "files": {
     "README.md": {
-      "purpose": "Current Henry 0.1.2 one-command guide, supplied server config and adaptive Slicer search.",
-      "sha256": "0bedd33971dbbcfa1f64c81f8adb975c83ea5147ca7934de5ba77f1cbe5020dc",
-      "bytes": 36325,
+      "purpose": "Current Henry operator guide with exact WinError 1326 SMB authentication troubleshooting.",
+      "sha256": "48ee3afc2f3cdcccfd4b1e4cbf0cf566dcaa3540b5f5270c624071656fe7ae28",
+      "bytes": 37113,
       "inputs": "Shared config and 8/133 left cortical groups; manual editor remains separate."
     },
     "armins.py": {
@@ -74,9 +74,9 @@
     },
     "docs/project_note.md": {
       "purpose": "Living ARMins journal with current setup and historical validation.",
-      "sha256": "298f4d4ae6acfcf7ad37ba1988775e88a0d281c7c81128c8ab0a4afe88845945",
-      "bytes": 31163,
-      "inputs": "2026-10-26 shared config, adaptive discovery, 57 tests, native 5.12.3 load and CI pass"
+      "sha256": "1de09d2201c7c6a29085cbc1d0343f0d68ded950abf86205297df35d9c9f338b",
+      "bytes": 32357,
+      "inputs": "2026-10-26 shared config, adaptive discovery, 57 tests, native load, green CI, and other-PC WinError 1326 diagnosis"
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
@@ -968,7 +968,7 @@
     "synthetic_tests": 57,
     "ordinary_python_preflight": "all three actual server inputs readable; synthetic missing hierarchy, incomplete checkout and malformed config fail before Slicer spawn",
     "native_slicer": "5.12.3 fresh process PID 39728 / child 20852 logged successful hierarchy, UNC template/ARM6 loads and 8 visible Insula plus 133 hidden cortex segments",
-    "other_pc": "blank scene reported; File Explorer reaches server atlas root; exact Slicer traceback/version and root cause pending",
+    "other_pc": "WinError 1326 on exact configured UNC template is Windows SMB logon failure; same-user manual authentication and successful rerun pending",
     "ci": "Run 40306176609 passed Windows and Ubuntu, including 57 synthetic tests"
   }
 }
