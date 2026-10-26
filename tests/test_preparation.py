@@ -63,7 +63,7 @@ class PrepareLevel6Tests(unittest.TestCase):
         with patch.object(armins, "_LOCAL_ATLAS_CONFIG", paths), \
                 patch.dict(armins.os.environ, {"ARMINS_TEMPLATE": str(self.root / "wrong.nii.gz")}):
             self.assertEqual(armins._preset_path("ARMINS_TEMPLATE", "template"), self.template_path.resolve())
-            self.assertEqual(armins._resolved_inputs(self.root / "explicit.nii.gz", None)[0],
+            self.assertEqual(armins._resolved_inputs(self.root / "explicit.nii.gz", self.atlas_path)[0],
                              (self.root / "explicit.nii.gz").resolve())
         with patch.object(armins, "_LOCAL_ATLAS_CONFIG", {}), \
                 patch.dict(armins.os.environ, {"ARMINS_TEMPLATE": str(self.template_path)}):

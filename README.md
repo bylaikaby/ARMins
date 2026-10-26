@@ -4,54 +4,71 @@ ARMins is a manually curated ARM atlas (use in combination with NMT v2.1 atlas) 
 This re-parcellation is performed by Henry Evrard.
 In this repo, we also provided a GUI that we built to allow similar processes to be applied to other cortices, for research groups specialised in particular cortices and looking for a finer regional annotation.
 
-This source checkout provides the **3D Slicer editing GUI** for that work.
-Curated atlas files and their anatomical review are separate deliverables;
-the source-code tests do not establish a finished anatomical atlas release.
-The insula preset is the starting workflow. Other ARM regions can be selected
-through their explicit atlas hierarchy and edited with the same controls.
+This source checkout provides a simple **Henry preset** viewer and a separate
+3D Slicer editing GUI. The preset opens two left-side ARM level-6 segmentation
+groups; the editor supports manual refinement and candidate mirroring. Curated
+atlas files and anatomical review are separate deliverables. Source-code tests
+do not establish a finished anatomical atlas release.
 
-**Choose one working hemisphere, L or R; refine its parcels; validate; then
-mirror the reviewed result into a separate opposite-side candidate.** This uses
-the symmetry of the selected NMT v2.1 reference and avoids drawing the same
-boundaries twice. Both original working groups remain available.
+[Henry preset details](#henry-preset-two-left-cortical-level-6-groups) ·
+[Atlas setup](#atlas-setup) · [Manual editing](#manual-editing-in-armins) ·
+[Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs)
 
-The complete guide below covers download, region selection, drawing, mirroring,
-review and saving. Optional command-line operations follow the GUI workflow.
+Current versions: **Henry preset 0.1.1** and **ARMins editor 0.7.7** (both
+local/unreleased). Their GUI labels or `--version` commands agree with
+[CHANGELOG.md](CHANGELOG.md). Neither is an anatomically accepted atlas release.
 
-[Atlas setup](#atlas-setup) · [Symmetry](#why-work-on-one-hemisphere) ·
-[Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs) ·
-[Command line](#optional-command-line-tools)
+## Quick start: Henry preset
 
-Current tool version: **0.7.7 (local/unreleased)**. The GUI title/header and
-`python armins.py --version` show the same value. See [CHANGELOG.md](CHANGELOG.md)
-for dated changes and validation.
+1. Install the official 3D Slicer application and obtain the NMT v2.1 symmetric
+   intensity image, supplied ARM6 label volume and matching ARM hierarchy CSV
+   described in [Atlas setup](#atlas-setup).
+2. Create the Git-ignored `local_atlas_config.json` beside `armins.py`. Give
+   `template`, `atlas` and `hierarchy` their three **absolute** source paths;
+   use the JSON example in [Settings](#settings-and-saved-outputs). The source
+   atlas files stay outside this repository.
+3. From an ordinary Python terminal, run:
 
-
-## Quick start
-
-1. Download or clone this repository, then obtain the two atlas inputs below.
-2. Open **View > Python Console** in 3D Slicer and run, replacing the example
-   repository location with your checkout. Keep the checkout files together:
-
-   ```python
-   import sys
-   sys.path.insert(0, "/path/to/ARMins")
-   import armins
-   armins.show_gui()
+   ```powershell
+   cd D:\ARMins
+   python henry_preset.py
    ```
 
-   On Windows, use a folder such as `r"C:\tools\ARMins"` in the second line.
-3. Choose the template and ready-made ARM level-6 file with **Browse...**.
-   The setup-help button opens the official AFNI links without changing the scene.
-4. Choose **L** or **R**, select a region group, and follow the editing guide.
-   Validate/load, edit and save that side, then use
-   **Mirror selected side (new candidate)**.
-   Inspect the separate opposite-side candidate before **Save mirrored
-   candidate...**. Both original working nodes remain available.
+   This opens a fresh Slicer process. For another Slicer installation, use
+   `python henry_preset.py --slicer "C:\path\to\Slicer.exe"` (see the
+   [Henry preset guide](#henry-preset-two-left-cortical-level-6-groups)).
+   The **Left insula** group (8 previous ARMins CL parcels) starts visible and
+   selected; **Left cortex** contains all
+   133 declared CL level-6 parcels and starts hidden. In **Data**, use the eye
+   icons to hide Insula and show cortex, then select cortex in **Segment
+   Editor**. The groups are independent; editing one does not update the other.
 
-The standard GUI workflow uses Slicer's bundled Python and NumPy. AFNI and an
-external Python installation are optional; neither is required to select the
-ready-made atlas files in Slicer.
+The full [Henry preset guide](#henry-preset-two-left-cortical-level-6-groups)
+explains the source identities, display controls and review limits. Its launcher
+uses ordinary Python; Slicer supplies the imaging/GUI Python environment. It
+does not install packages or write an atlas derivative.
+
+## Manual editing in ARMins
+
+This is a **separate workflow** in a fresh Slicer scene. Henry preset groups
+are display groups; they are not automatically bound to the editor's scope,
+mirror and save contracts. For expert refinement, open **View > Python Console**
+in Slicer and run, replacing the example checkout path:
+
+```python
+import sys
+sys.path.insert(0, "/path/to/ARMins")
+import armins
+armins.show_gui()
+```
+
+On Windows, a checkout path such as `r"C:\tools\ARMins"` works in the
+second line. Choose the template and ready-made ARM level-6 file with
+**Browse...**, choose L or R and a region group, then follow the
+[full GUI guide](#complete-editing-guide). Validate/load, edit and save the
+chosen side; create and inspect a separate mirror candidate before saving it.
+Both original working nodes remain available. Slicer's bundled Python and
+NumPy handle this GUI; AFNI and an external CLI environment are optional.
 
 ## Dependency setup and checks
 
@@ -242,7 +259,8 @@ if the study needs hemisphere-specific boundaries, retain independent edits.
 
 ### 1. Choose the inputs, region and working hemisphere
 
-Open ARMins using Quick start and select the two files from Atlas setup.
+Open the editor using [Manual editing in ARMins](#manual-editing-in-armins)
+in a separate fresh Slicer scene, then select the two files from Atlas setup.
 Choose **L** or **R** as the working hemisphere.
 
 For the original insula workflow, keep **Insula preset**. It uses eight ARM6

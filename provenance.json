@@ -32,9 +32,9 @@
   "files": {
     "README.md": {
       "purpose": "Current one-command Henry preset 0.1.1 launch, exact group labels, source table, visibility review and flowchart.",
-      "sha256": "edf454d1e56c081dc1f73e5efbc8a2cb5736606c1015ddd73494d5b40b6406c1",
-      "bytes": 34675,
-      "inputs": "Current one-command Henry preset 0.1.1 launch, exact group labels, source table, visibility review and flowchart."
+      "sha256": "ad78b461f786407ef7a348cdbaa7d7bf0e9728c14dbb67c30311a00df315f083",
+      "bytes": 35663,
+      "inputs": "Henry-first quick start, alternate Slicer executable, separate manual editor workflow and unchanged scientific limits."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
@@ -44,9 +44,9 @@
     },
     "CHANGELOG.md": {
       "purpose": "Henry preset 0.1.1 rendering repair and direct launcher with 0.1.0 visual failure retained.",
-      "sha256": "e117fd887c1cc280a4b879d03ff5c58faadbf02df305c390f8027955b279c79a",
-      "bytes": 10756,
-      "inputs": "Henry preset 0.1.1 rendering repair and direct launcher with 0.1.0 visual failure retained."
+      "sha256": "ab2df0b9a055a319f66f238e4ce153ca8676b4d39f259520e17d1a1cdcffa88a",
+      "bytes": 11289,
+      "inputs": "Records clean CI test correction and Henry-first guide; runtime versions unchanged."
     },
     "AGENTS.md": {
       "purpose": "Public source-maintenance contract without personal configuration.",
@@ -74,9 +74,9 @@
     },
     "docs/project_note.md": {
       "purpose": "2026-10-26 rendering defect correction, native screenshots, direct launch evidence and review steps.",
-      "sha256": "348bcfd647d26cd78d41be442c5f22f66ba0444c47d00b671f8086741f267024",
-      "bytes": 26521,
-      "inputs": "2026-10-26 rendering defect correction, native screenshots, direct launch evidence and review steps."
+      "sha256": "74cea95b5f5a0aaaf1eb7d319cabe555669c84a7debde94b378011e0ebcd2f30",
+      "bytes": 27870,
+      "inputs": "2026-10-26 clean CI failure diagnosis, hermetic 53-test rerun and Henry-first operator guide."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
@@ -98,9 +98,9 @@
     },
     "tests/test_preparation.py": {
       "purpose": "Synthetic NIfTI/CLI preparation, provenance and non-overwrite tests.",
-      "sha256": "08c15edf7eabda48bc5a257ad9e4164f0f3c935433aac694605ea2fb355de8c7",
-      "bytes": 15231,
-      "inputs": "Focused missing/malformed/relative config and precedence coverage added; synthetic suite 53 passed."
+      "sha256": "dd1dfe67ecc18a5c3f0b3ca9fa9e97a05dba1ec97bff6c156e24b81ac9d4fbf1",
+      "bytes": 15242,
+      "inputs": "Explicit local-config precedence test now passes both synthetic input paths and runs without personal config."
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
@@ -915,6 +915,16 @@
       ],
       "tested_script_sha256": "30a78ab4d0e3d8ecfcbc04fd7f885087a6f3593e9cba7c754f8ba8db5b6b84d8",
       "ordinary_python_launch": "passed: new Slicer process opened from D:/ARMins with python henry_preset.py"
+    },
+    "clean_no_config_synthetic_20261026": {
+      "status": "passed",
+      "tests": 53,
+      "runtime": "armins-cli Conda on local Windows",
+      "fixture": "temporary source-only copy, removed after test",
+      "local_atlas_config_present": false,
+      "armins_input_environment_present": false,
+      "reason": "first Ubuntu Conda CI found a test that accidentally relied on ignored local config",
+      "runtime_source_changed": false
     }
   },
   "superseded_viewer_source_hashes_20261026": {

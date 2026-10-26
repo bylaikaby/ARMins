@@ -47,6 +47,12 @@ operation. Template images remain external references; source data are preserved
 
 ## Operations journal
 
+### 2026-10-26 | Agent Codex | Henry-first guide and clean CI test correction
+
+- After publishing ARMins editor 0.7.7 and Henry viewer 0.1.1 at commit `8c3cebecd8f1442a8334fd9f212efb5de540c55a`, the Ubuntu Conda CI job failed one synthetic test: its explicit-template assertion omitted the atlas path and passed locally only because the ignored personal config supplied `ARM_PATH`. The actual runtime input requirement behaved correctly. Changed the test to supply its synthetic atlas explicitly; no runtime module or viewer code changed.
+- Reframed README Quick start around `cd D:\ARMins; python henry_preset.py`, the three-key ignored local config and the 8/133 left-group display controls. An alternate Slicer executable can be passed with `--slicer`; the `armins.show_gui()` operator steps remain in a separate manual-editing section and fresh scene. Henry display groups are not automatically editor-bound scope or mirror groups.
+- Verification: copied only source modules and five synthetic test files to a temporary clean fixture, with no `local_atlas_config.json` and ARMINS input variables unset. All 53 tests passed; the fixture was removed. Earlier native 141-mask and rendered-view checks remain tied to unchanged editor/viewer source hashes. A new CI run is pending publication of this correction; anatomical acceptance remains open.
+
 ### 2026-10-26 | Agent Codex | Henry preset rendering and direct launch (viewer 0.1.1)
 
 - Visual review corrected the earlier 0.1.0 technical-only pass: the GUI listed both groups but emitted repeated VTK lookup-table/scalar-type errors and showed no colored overlays. Mask equality alone did not verify rendering. The earlier 0.1.0 native receipt is retained as a failed rendering candidate, not promoted.

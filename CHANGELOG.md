@@ -44,6 +44,14 @@ One consolidated history. README.md is the operator guide.
 
 ## 0.7.7 - 2026-10-26 (local/unreleased)
 
+- Fixed the local-config precedence test to supply both synthetic input paths.
+  Its earlier implicit atlas path came from an ignored personal config, causing
+  the first clean Ubuntu Conda CI run to fail. All 53 synthetic tests passed in
+  a clean source-only fixture with ARMINS inputs unset and no local config.
+- Made Henry preset the README's primary launch path and kept `armins.show_gui()`
+  as a separate expert editing workflow. Documentation changed; editor and
+  viewer runtime behavior and their versions are unchanged.
+
 - Read an ignored explicit `local_atlas_config.json` beside `armins.py` for
   absolute template, ARM6 and hierarchy paths. This removes the need for
   inherited Windows environment settings in a personal checkout; explicit
