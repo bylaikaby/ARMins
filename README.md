@@ -14,7 +14,7 @@ do not establish a finished anatomical atlas release.
 [Atlas setup](#atlas-setup) · [Manual editing](#manual-editing-in-armins) ·
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs)
 
-Current versions: **Henry preset 0.1.1** and **ARMins editor 0.7.7** (both
+Current versions: **Henry preset 0.1.2** and **ARMins editor 0.7.8** (both
 local/unreleased). Their GUI labels or `--version` commands agree with
 [CHANGELOG.md](CHANGELOG.md). Neither is an anatomically accepted atlas release.
 
@@ -23,9 +23,9 @@ local/unreleased). Their GUI labels or `--version` commands agree with
 1. Install the official 3D Slicer application and obtain the NMT v2.1 symmetric
    intensity image, supplied ARM6 label volume and matching ARM hierarchy CSV
    described in [Atlas setup](#atlas-setup).
-2. Create the Git-ignored `local_atlas_config.json` beside `armins.py`. Give
-   `template`, `atlas` and `hierarchy` their three **absolute** source paths;
-   use the JSON example in [Settings](#settings-and-saved-outputs). The source
+2. Use the supplied `atlas_config.json` beside `armins.py`. It gives
+   `template`, `atlas` and `hierarchy` the three **absolute** server source paths;
+   edit it only when the atlas is accessed at another path. The source
    atlas files stay outside this repository.
 3. From an ordinary Python terminal, run:
 
@@ -161,16 +161,16 @@ or resampling.
 ## Henry preset: two left cortical level-6 groups
 
 `henry_preset.py` is a single Slicer entry point for viewing two independent
-segmentation groups in one **fresh blank Slicer scene**. It reads the ignored
-`local_atlas_config.json` beside `armins.py`, loads the full symmetric NMT
+segmentation groups in one **fresh blank Slicer scene**. It reads the supplied
+`atlas_config.json` beside `armins.py`, loads the full symmetric NMT
 intensity template once, and uses the supplied ARM6 image and hierarchy table.
 The source files are read only. The full bilateral ARM labelmap is removed
 from the scene after import and is never used as a slice overlay.
 
 | Group in Segment Editor/Data | Exact declared IDs | Initial display |
 |---|---|---|
-| Henry preset v0.1.1 - Left insula (8 CL L6) | ARMins' previous eight CL Insula preset parcels: 39, 41, 42, 43, 226, 228, 229, 230 | Visible and selected |
-| Henry preset v0.1.1 - Left cortex (all CL L6) | All cortical namespace, left, level-6 `CL_*` leaves (133 in the verified hierarchy) | Hidden; select/show when needed |
+| Henry preset v0.1.2 - Left insula (8 CL L6) | ARMins' previous eight CL Insula preset parcels: 39, 41, 42, 43, 226, 228, 229, 230 | Visible and selected |
+| Henry preset v0.1.2 - Left cortex (all CL L6) | All cortical namespace, left, level-6 `CL_*` leaves (133 in the verified hierarchy) | Hidden; select/show when needed |
 
 These are **separate groups** with the same atlas source masks. Editing one
 will not update the other. They contain no right or subcortical parcels. The
@@ -184,8 +184,9 @@ cd D:\ARMins
 python henry_preset.py
 ```
 
-This launcher uses the installed Slicer 5.12.0 in the current user's
-`LOCALAPPDATA` by default. If it is elsewhere, pass
+This launcher checks PATH, standard Windows per-user and Program Files locations,
+and registered app/install locations, then picks the newest stable installed
+Slicer by numeric version. To override, pass
 `python henry_preset.py --slicer "C:\path\to\Slicer.exe"`. Use
 `--help` or `--version` without starting Slicer. It opens a fresh Slicer
 process and runs this same file there; no packages or data are installed.
@@ -207,7 +208,7 @@ automatically.
 
 ```mermaid
 flowchart LR
-  O[Operator starts henry_preset.py in fresh Slicer] --> C[Ignored local_atlas_config.json]
+  O[Operator starts henry_preset.py in fresh Slicer] --> C[Supplied atlas_config.json]
   C --> I[NMT intensity + ARM6 labels + hierarchy CSV]
   I --> V[Validate grid and exact left cortical L6 IDs]
   V --> M[Build Insula 8 and cortex 133 masks in memory]
@@ -218,7 +219,7 @@ flowchart LR
 
 | Source input | Purpose |
 |---|---|
-| `local_atlas_config.json` | Explicit absolute paths for the three immutable inputs; ignored by Git. |
+| `atlas_config.json` | Tracked shared UNC paths for the three immutable inputs; source files stay external. |
 | `NMT_v2.1_sym_SS.nii.gz` | Full-reference intensity background and voxel geometry. |
 | `ARM_6_in_NMT_v2.1_sym.nii.gz` | Source integer labels; selected masks are built in memory. |
 | `ARM_key_table.csv` | Declares cortical namespace, side, level and segment names. |
@@ -458,7 +459,7 @@ from parcel partition checks and remain hidden in mirror candidates.
 | Setting | Default | Effect |
 |---|---|---|
 | Template and ARM6 inputs | Blank GUI selectors without local settings | Choose matching 3-D volumes explicitly. |
-| `local_atlas_config.json` | Absent | Optional explicit per-checkout template, atlas and hierarchy paths; ignored by Git. Takes precedence over `ARMINS_*` input variables. |
+| `atlas_config.json` | Supplied and tracked | Shared absolute UNC template, atlas and hierarchy paths; takes precedence over `ARMINS_*` input variables. |
 | `ARMINS_TEMPLATE` | Unset | Optional template path before opening ARMins. |
 | `ARMINS_ATLAS` | Unset | Optional 3-D ARM level-6 path. |
 | `ARMINS_OUTPUT_DIR` | `./outputs` | Initial folder for save dialogs. |
@@ -468,21 +469,17 @@ from parcel partition checks and remain hidden in mirror candidates.
 | Working hemisphere | L | Choose L or R; the initial editor focus and mirror direction follow this selection. |
 | `refresh_scopes` | `False` | Preserve a changed scope and refuse reuse; explicit `run(refresh_scopes=True)` replaces it from the source atlas. Save edits first. |
 
-To keep explicit machine paths in this checkout, create `local_atlas_config.json`
-next to `armins.py` with exactly these three absolute paths (Windows UNC paths
-are supported):
-
-```json
-{"template": "C:\\atlas\\NMT_v2.1_sym_SS.nii.gz",
- "atlas": "C:\\atlas\\ARM_6_in_NMT_v2.1_sym.nii.gz",
- "hierarchy": "C:\\atlas\\ARM_key_table.csv"}
-```
-
-The file is ignored by Git. ARMins reads it when imported. Invalid JSON, missing
-keys and relative paths fail clearly. Explicit `configure(...)`, GUI selections
-and CLI `--template`/`--atlas` inputs still override the starting paths; the
-`ARMINS_*` environment inputs remain fallback when the local file is absent.
-Restart Slicer or reload the Python module after changing this file.
+The supplied `atlas_config.json` next to `armins.py` contains exactly three
+absolute source paths (`template`, `atlas`, `hierarchy`) for the shared server.
+It is tracked with the source code; atlas images and tables remain on the server.
+The configured server must be reachable when loading volumes or the hierarchy.
+Import, `--help`, `--version` and `doctor` do not access it. On a host without
+access to that UNC share, use an accessible mounted/native path through explicit
+CLI/function inputs or edit this shared config deliberately before loading.
+ARMins rejects invalid JSON, missing keys and relative paths. Explicit
+`configure(...)`, GUI selections and CLI `--template`/`--atlas` still override
+the starting paths; `ARMINS_*` input variables are fallback only if no config
+is supplied. Restart Slicer or reload the Python module after changing it.
 
 Equivalent programmatic configuration inside Slicer:
 

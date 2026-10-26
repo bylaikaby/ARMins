@@ -3,8 +3,10 @@
 - Read README.md, CHANGELOG.md, provenance.json and docs/project_note.md before
   substantial changes. Keep the single-module operator discoverable.
 - Keep atlas/template data, edits, generated receipts, environments, credentials
-  and personal machine configuration out of Git. Use explicit user inputs or
-  the documented ARMINS environment variables.
+  and personal machine configuration out of Git. The user-approved tracked
+  `atlas_config.json` declares only the shared server paths for the template,
+  ARM6 atlas and hierarchy; keep credentials and source data out of it. Explicit
+  user inputs and documented ARMINS environment variables remain supported.
 - Preserve original data and existing scene nodes. Validate inputs and the full
   native voxel lattice before mutation; do not silently resample, crop labels,
   drop unknown segments or alter scientific definitions.

@@ -1,6 +1,6 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.7.7 (local/unreleased)
+Version: 0.7.8 (local/unreleased)
 Last updated: 2026-10-26
 Change history: CHANGELOG.md
 Status: experimental
@@ -9,7 +9,7 @@ Derived from an earlier standalone editor baseline. Public changes are recorded
 in the repository CHANGELOG.md; see that file for source mapping and validation.
 """
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import argparse
 import hashlib
 import importlib.util
@@ -29,7 +29,7 @@ try:
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.7.7 (local/unreleased)"
+VERSION = "0.7.8 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):
@@ -100,31 +100,44 @@ def _environment_path(name):
     return Path(value).expanduser().resolve() if value else None
 
 
-LOCAL_ATLAS_CONFIG_PATH = Path(__file__).with_name("local_atlas_config.json")
+ATLAS_CONFIG_PATH = Path(__file__).with_name("atlas_config.json")
 
 
-def _read_local_atlas_config(path=LOCAL_ATLAS_CONFIG_PATH):
-    """Read explicit untracked local inputs; reject ambiguous settings."""
+def _read_atlas_config(path=ATLAS_CONFIG_PATH):
+    """Read the supplied shared inputs without accessing the source files."""
     if not path.is_file():
         return {}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"invalid local atlas config {path}: {exc}") from exc
+        raise ValueError(f"invalid atlas config {path}: {exc}") from exc
     if not isinstance(data, dict) or set(data) != {"template", "atlas", "hierarchy"}:
-        raise ValueError(f"local atlas config {path} must contain template, atlas, hierarchy only")
+        raise ValueError(f"atlas config {path} must contain template, atlas, hierarchy only")
     for key, value in data.items():
-        if not isinstance(value, str) or not value or not Path(value).is_absolute():
-            raise ValueError(f"local atlas config {path}: {key} must be an absolute path")
+        if not isinstance(value, str) or not value or not (
+                Path(value).is_absolute() or PureWindowsPath(value).is_absolute()):
+            raise ValueError(f"atlas config {path}: {key} must be an absolute path")
     return data
 
 
-_LOCAL_ATLAS_CONFIG = _read_local_atlas_config()
+# Compatibility names for callers of the original local-only configuration helper.
+LOCAL_ATLAS_CONFIG_PATH = ATLAS_CONFIG_PATH
+_read_local_atlas_config = _read_atlas_config
+ATLAS_CONFIG = _read_atlas_config()
 
 
 def _preset_path(name, key):
-    value = _LOCAL_ATLAS_CONFIG.get(key)
-    return Path(value).resolve() if value else _environment_path(name)
+    value = ATLAS_CONFIG.get(key)
+    if not value:
+        return _environment_path(name)
+    path = Path(value).expanduser()
+    if path.is_absolute():
+        return path.resolve()
+    if value.startswith("\\\\"):
+        # Preserve the server/share identity on POSIX without contacting it.
+        # Loading there still requires a mounted path or explicit override.
+        return Path("//" + value.lstrip("\\").replace("\\", "/"))
+    return path
 
 
 REF_PATH = _preset_path("ARMINS_TEMPLATE", "template")

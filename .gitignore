@@ -23,7 +23,6 @@ __pycache__/
 Thumbs.db
 
 # Local configuration and credentials
-local_atlas_config.json
 .env
 .env.*
 *_local.*

@@ -1,0 +1,5 @@
+{
+  "template": "\\\\10.102.8.200\\microscopy_data\\fMOST\\resources\\atlas\\NMT_v2.1_sym\\NMT_v2.1_sym\\NMT_v2.1_sym_SS.nii.gz",
+  "atlas": "\\\\10.102.8.200\\microscopy_data\\fMOST\\resources\\atlas\\NMT_v2.1_sym\\NMT_v2.1_sym\\supplemental_ARM\\ARM_6_in_NMT_v2.1_sym.nii.gz",
+  "hierarchy": "\\\\10.102.8.200\\microscopy_data\\fMOST\\resources\\atlas\\NMT_v2.1_sym\\tables_ARM\\ARM_key_table.csv"
+}

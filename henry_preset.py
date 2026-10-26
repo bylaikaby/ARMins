@@ -1,18 +1,20 @@
 """Show Henry's two left-cortical ARM level-6 segmentation groups in 3D Slicer.
 
-Version: 0.1.1 (local/unreleased)
+Version: 0.1.2 (local/unreleased)
 Last updated: 2026-10-26
 Change history: CHANGELOG.md
 Status: candidate
 
 Run in a fresh Slicer scene: --python-script D:/ARMins/henry_preset.py
-Requires the ignored local_atlas_config.json beside armins.py. No source files are written.
+Uses the supplied atlas_config.json beside armins.py. No source files are written.
 """
 
 from pathlib import Path
+import re
+import shutil
 import sys
 
-VERSION = "0.1.1 (local/unreleased)"
+VERSION = "0.1.2 (local/unreleased)"
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
@@ -25,9 +27,9 @@ def show():
     import armins
     from arm_hierarchy import ArmHierarchy
 
-    config = armins._read_local_atlas_config()
+    config = armins._read_atlas_config()
     if not config:
-        raise ValueError(f"explicit atlas config is required: {armins.LOCAL_ATLAS_CONFIG_PATH}")
+        raise ValueError(f"explicit atlas config is required: {armins.ATLAS_CONFIG_PATH}")
     paths = {key: Path(value).resolve() for key, value in config.items()}
     for key, path in paths.items():
         if not path.is_file():
@@ -101,8 +103,8 @@ def show():
         segmentation.GetDisplayNode().SetVisibility(visible)
         return segmentation, masked
 
-    insula, insula_masked = build_group(insula_ids, "Henry preset v0.1.1 - Left insula (8 CL L6)", True)
-    cortex, _ = build_group(set(by_id), "Henry preset v0.1.1 - Left cortex (all CL L6)", False)
+    insula, insula_masked = build_group(insula_ids, "Henry preset v0.1.2 - Left insula (8 CL L6)", True)
+    cortex, _ = build_group(set(by_id), "Henry preset v0.1.2 - Left cortex (all CL L6)", False)
     slicer.mrmlScene.RemoveNode(source)
     for colors in import_colors:
         slicer.mrmlScene.RemoveNode(colors)
@@ -135,27 +137,111 @@ def _running_in_slicer():
             and hasattr(slicer, "util"))
 
 
+def _slicer_rank(path):
+    name = path.parent.name.lower()
+    match = re.search(r"(?:3d\s+)?slicer[\s_-]*(\d+(?:\.\d+)*)", name)
+    version = tuple(int(part) for part in match.group(1).split(".")) if match else ()
+    preview = bool(re.search(r"(?:preview|nightly|alpha|beta|rc|dev)", name))
+    return (not preview, version, str(path).lower())
+
+
+def _registry_slicer_candidates():
+    """Read bounded Windows installation registrations, if available."""
+    if sys.platform != "win32":
+        return []
+    import winreg
+
+    found = []
+    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        for key_name in (r"Software\Microsoft\Windows\CurrentVersion\App Paths\Slicer.exe",
+                         r"Software\Microsoft\Windows\CurrentVersion\Uninstall",
+                         r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"):
+            try:
+                with winreg.OpenKey(hive, key_name) as key:
+                    if key_name.endswith("Slicer.exe"):
+                        found.append(Path(str(winreg.QueryValueEx(key, "")[0]).strip('"')))
+                    else:
+                        for index in range(winreg.QueryInfoKey(key)[0]):
+                            child_name = winreg.EnumKey(key, index)
+                            try:
+                                with winreg.OpenKey(key, child_name) as child:
+                                    display_name = winreg.QueryValueEx(child, "DisplayName")[0]
+                                    if not re.match(r"^(?:3d[\s_-]*)?slicer(?:[\s_-]|\d|$)",
+                                                    str(display_name).lower()):
+                                        continue
+                                    try:
+                                        location = winreg.QueryValueEx(child, "InstallLocation")[0]
+                                        if location:
+                                            found.append(Path(location) / "Slicer.exe")
+                                            continue
+                                    except OSError:
+                                        pass
+                                    try:
+                                        icon = winreg.QueryValueEx(child, "DisplayIcon")[0]
+                                        icon_path = Path(str(icon).split(",")[0].strip('"'))
+                                        if icon_path.name.lower() == "slicer.exe":
+                                            found.append(icon_path)
+                                    except OSError:
+                                        pass
+                            except (OSError, ValueError):
+                                continue
+            except (OSError, ValueError):
+                continue
+    return found
+
+
+def _installed_slicer(explicit=None, *, roots=None, path_match=None, registry_candidates=None):
+    """Find a local Slicer executable using bounded, nonrecursive probes."""
+    import os
+
+    if explicit is not None:
+        path = Path(explicit).expanduser().resolve()
+        if not path.is_file():
+            raise FileNotFoundError(f"Slicer executable not found: {path}")
+        return path
+    if roots is None:
+        roots = []
+        for name in ("LOCALAPPDATA", "ProgramFiles", "ProgramW6432", "ProgramFiles(x86)"):
+            value = os.environ.get(name)
+            if value:
+                roots.extend((Path(value), Path(value) / "slicer.org"))
+    if path_match is None:
+        path_match = shutil.which("Slicer.exe") or shutil.which("Slicer")
+    candidates = []
+    if path_match:
+        candidates.append(Path(path_match))
+    candidates.extend(_registry_slicer_candidates() if registry_candidates is None
+                      else registry_candidates)
+    for root in roots:
+        root = Path(root)
+        candidates.append(root / "Slicer.exe")
+        if root.is_dir():
+            candidates.extend(folder / "Slicer.exe" for folder in root.iterdir()
+                              if folder.is_dir() and re.match(r"^(?:3d[\s_-]*)?slicer(?:[\s_-]|\d|$)",
+                                                              folder.name.lower()))
+    available = {path.resolve() for path in candidates
+                 if path.name.lower() == "slicer.exe" and path.is_file()}
+    if not available:
+        raise FileNotFoundError('No installed Slicer found; pass --slicer "C:\\path\\to\\Slicer.exe"')
+    return max(available, key=_slicer_rank)
+
+
 def main(argv=None):
     """Launch the installed Slicer application from ordinary Python."""
     import argparse
-    import os
     import subprocess
 
     parser = argparse.ArgumentParser(description="Open Henry's two left ARM L6 groups in a fresh Slicer process")
     parser.add_argument("--slicer", type=Path, help="explicit path to Slicer.exe")
     parser.add_argument("--version", action="version", version=f"Henry preset {VERSION}")
     args = parser.parse_args(argv)
-    if args.slicer is not None:
-        executable = args.slicer.expanduser().resolve()
-    else:
-        local_app_data = os.environ.get("LOCALAPPDATA")
-        executable = (Path(local_app_data) / "slicer.org" / "3D Slicer 5.12.0" / "Slicer.exe"
-                      if local_app_data else None)
-    if executable is None or not executable.is_file():
-        parser.error("Slicer.exe not found; pass --slicer with the installed application path")
+    try:
+        executable = _installed_slicer(args.slicer)
+    except FileNotFoundError as exc:
+        parser.error(str(exc))
     process = subprocess.Popen([str(executable), "--no-splash", "--python-script",
                                 str(Path(__file__).resolve())], cwd=str(SCRIPT_DIR))
-    print(f"Opened Henry preset {VERSION} in Slicer (PID {process.pid})")
+    print(f"Opened Henry preset {VERSION} with {executable} (PID {process.pid})")
     return 0
 
 

@@ -1,6 +1,6 @@
 """Synthetic NIfTI preparation and portable CLI checks for ARMins.
 
-Version: 0.7.7 (local/unreleased)
+Version: 0.7.8 (local/unreleased)
 Last updated: 2026-10-26
 Change history: CHANGELOG.md
 Status: candidate
@@ -53,27 +53,35 @@ class PrepareLevel6Tests(unittest.TestCase):
         self.assertEqual(version_line.removeprefix("Version: "), armins.VERSION)
 
     def test_explicit_local_atlas_config_precedence_and_errors(self):
-        config = self.root / "local_atlas_config.json"
-        self.assertEqual(armins._read_local_atlas_config(config), {})
+        config = self.root / "atlas_config.json"
+        self.assertEqual(armins._read_atlas_config(config), {})
         paths = {"template": str(self.template_path),
                  "atlas": str(self.atlas_path),
                  "hierarchy": str(self.root / "ARM_key_table.csv")}
         config.write_text(json.dumps(paths), encoding="utf-8")
-        self.assertEqual(armins._read_local_atlas_config(config), paths)
-        with patch.object(armins, "_LOCAL_ATLAS_CONFIG", paths), \
+        self.assertEqual(armins._read_atlas_config(config), paths)
+        with patch.object(armins, "ATLAS_CONFIG", paths), \
                 patch.dict(armins.os.environ, {"ARMINS_TEMPLATE": str(self.root / "wrong.nii.gz")}):
             self.assertEqual(armins._preset_path("ARMINS_TEMPLATE", "template"), self.template_path.resolve())
             self.assertEqual(armins._resolved_inputs(self.root / "explicit.nii.gz", self.atlas_path)[0],
                              (self.root / "explicit.nii.gz").resolve())
-        with patch.object(armins, "_LOCAL_ATLAS_CONFIG", {}), \
+        with patch.object(armins, "ATLAS_CONFIG", {}), \
                 patch.dict(armins.os.environ, {"ARMINS_TEMPLATE": str(self.template_path)}):
             self.assertEqual(armins._preset_path("ARMINS_TEMPLATE", "template"), self.template_path.resolve())
         config.write_text("{broken", encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "invalid local atlas config"):
-            armins._read_local_atlas_config(config)
+        with self.assertRaisesRegex(ValueError, "invalid atlas config"):
+            armins._read_atlas_config(config)
         config.write_text(json.dumps({**paths, "atlas": "relative.nii.gz"}), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "absolute path"):
-            armins._read_local_atlas_config(config)
+            armins._read_atlas_config(config)
+        unc = r"\\atlas-test\share\fMOST\resources\atlas\NMT_v2.1_sym"
+        shared = {key: unc + "\\" + key for key in ("template", "atlas", "hierarchy")}
+        config.write_text(json.dumps(shared), encoding="utf-8")
+        self.assertEqual(armins._read_atlas_config(config), shared)
+        with patch.object(armins, "ATLAS_CONFIG", shared):
+            selected = str(armins._preset_path("ARMINS_TEMPLATE", "template"))
+            self.assertTrue(selected.startswith("\\\\atlas-test") if sys.platform == "win32"
+                            else selected.startswith("//atlas-test/"))
 
     def _save_template(self):
         nib.save(nib.Nifti1Image(self.template, self.affine), str(self.template_path))

@@ -27,17 +27,14 @@ operation. Template images remain external references; source data are preserved
 
 ## Current verification and review
 
-- Current source: 0.7.7 local/unreleased. CLI install is the Conda recipe `environment.yml`.
-  The authoritative personal atlas inputs are in ignored `local_atlas_config.json`
-  beside `armins.py`; README documents the three-key format and precedence.
-  A separate visible Slicer 5.12.0 window loaded the built-in Insula preset
-  from this file with all three input environment variables removed. Technical
-  loading and display were observed; anatomy still needs scientific review.
-  Historical 0.7.5 validation below stays tied to that snapshot; its
-  `armins.py` sha256 was
-  `fa8ac68021aae0614f87aca995f6a825dae870ae3e9e359a158033d7392c62fc`.
-  No local config/cache or atlas data was copied to cloud VMs; only public
-  provider downloads were used.
+- Current source: editor 0.7.8 and Henry viewer 0.1.2, both local/unreleased.
+  The one tracked `atlas_config.json` supplies the three shared server UNC
+  inputs. The source data stay external. Ordinary Python auto-discovers the
+  newest stable installed Slicer; an explicit `--slicer` path overrides it.
+  The user-requested config is portable as declared UNC syntax, but loading
+  still requires server access or explicit mounted/native inputs. Technical
+  loading/display is distinct from anatomical acceptance.
+  Historical 0.7.5 validation below remains tied to its recorded hashes.
 - Review in order: (1) follow README's GUI versus CLI dependency path; `doctor`
   should report ready; (2) inspect Actions receipts/checks for the selected OS;
   (3) open the atlas in a supported desktop graphics environment and judge its
@@ -46,6 +43,35 @@ operation. Template images remain external references; source data are preserved
   first traceback and Slicer version; cloud startup/import/load paths passed.
 
 ## Operations journal
+
+### 2026-10-26 | Agent Codex | Supplied atlas config and installed Slicer discovery (editor 0.7.8, Henry 0.1.2)
+
+- User superseded the ignored personal config with one supplied Git-tracked
+  `atlas_config.json`, containing the verified template, ARM6 and hierarchy UNC
+  paths only. Updated both entry points, README, AGENTS, tests and provenance;
+  no credentials or atlas files were copied. Cross-platform config parsing
+  validates UNC syntax without accessing the server and preserves server/share
+  identity on POSIX. The previous local-only behavior remains in history below.
+- Henry launcher now probes PATH, immediate standard Windows per-user/Program
+  Files Slicer installation folders, and bounded registered app/install paths, picks the highest numeric stable version,
+  and gives `--slicer` explicit precedence. No recursive drive search, download
+  or installation. Found installed Slicer 5.12.3 over 5.12.0 on this host. Final
+  launcher tests also cover `Slicer5.12.2` folders and reject unrelated
+  `PrusaSlicer.exe` candidates; a missing or empty registry InstallLocation
+  falls back to DisplayIcon only when its basename is `Slicer.exe`.
+- Bounded tests: 55 synthetic tests passed, including shared config and launcher
+  missing/override/version/path-with-spaces cases. CLI versions and read-only
+  doctor reported 0.7.8/0.1.2 and ready. Ordinary `python henry_preset.py`
+  launched a fresh Slicer 5.12.3 process (launcher PID 71688; app child 33608).
+  The new Slicer 5.12.3 session log confirms successful UNC volume loads and
+  Henry 0.1.2 reporting 8 visible Insula and 133 hidden cortex segments, with
+  no logged load or VTK errors. Earlier 0.1.1 exact mask/render checks are
+  historical evidence only; new 0.1.2 anatomical review remains pending. Anatomical
+  acceptance remains pending.
+- Previous CI: Ubuntu passed at commit e29c090; Windows stopped in Miniforge
+  setup before tests because shell initialization required elevation. The CI
+  action now uses official setup-miniconda v4 with `run-init: false` and explicit
+  `conda run` steps. New CI outcome pending publication.
 
 ### 2026-10-26 | Agent Codex | Henry-first guide and clean CI test correction
 

@@ -2,6 +2,25 @@
 
 One consolidated history. README.md is the operator guide.
 
+## Henry preset viewer 0.1.2 - 2026-10-26 (local/unreleased)
+
+- Use the one supplied `atlas_config.json` for both the editor and viewer.
+  Discover installed Slicer applications through bounded PATH, per-user,
+  Program Files and registry probes; accept common `Slicer*` folder spellings
+  and only `Slicer.exe` candidates, then choose the newest stable numeric version. Explicit
+  `--slicer` remains highest precedence. No atlas data are bundled or modified.
+- Validation: 55 synthetic tests and one native Slicer 5.12.3 launch/load
+  with 8+133 groups and no logged errors; display review is in the project note. Anatomical acceptance remains pending.
+
+## 0.7.8 - 2026-10-26 (local/unreleased)
+
+- Supply the user-requested shared server UNC paths in one tracked
+  `atlas_config.json`; validate Windows UNC syntax on all host platforms
+  without server I/O at import. Preserve UNC identity on POSIX rather than
+  resolving it beneath the checkout. Explicit overrides remain supported.
+- The previously ignored personal config is superseded. The shared config
+  carries paths only, with no credentials or atlas files.
+
 ## Henry preset viewer 0.1.1 - 2026-10-26 (local/unreleased)
 
 - Hide the temporary ARM labelmap during import, retain its color tables until

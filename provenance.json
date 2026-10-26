@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
   "recorded_date": "2026-10-26",
-  "tool_version": "0.7.7 (local/unreleased)",
+  "tool_version": "0.7.8 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -31,34 +31,34 @@
   ],
   "files": {
     "README.md": {
-      "purpose": "Current one-command Henry preset 0.1.1 launch, exact group labels, source table, visibility review and flowchart.",
-      "sha256": "ad78b461f786407ef7a348cdbaa7d7bf0e9728c14dbb67c30311a00df315f083",
-      "bytes": 35663,
-      "inputs": "Henry-first quick start, alternate Slicer executable, separate manual editor workflow and unchanged scientific limits."
+      "purpose": "Current Henry 0.1.2 one-command guide, supplied server config and adaptive Slicer search.",
+      "sha256": "d8703d8b1562dc16cd19a68b1a69ddf8a1394db107d075f6c4f73bbad49a3588",
+      "bytes": 35845,
+      "inputs": "Shared config and 8/133 left cortical groups; manual editor remains separate."
     },
     "armins.py": {
-      "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "925b59ab4227d8a07b24bab23a65b5deb66bb0a563c14a44fa59653afd24dfaf",
-      "bytes": 107502,
-      "inputs": "0.7.7 explicit ignored local atlas configuration; input selection precedence changed, scientific algorithms unchanged."
+      "purpose": "ARMins 0.7.8 editor and CLI with supplied shared atlas config.",
+      "sha256": "6795adf9d6ca98dd860a8fe53cd2ec427e1077fb3ea0e12b66de80ed6c33b0a4",
+      "bytes": 108039,
+      "inputs": "Tracked atlas_config.json; cross-platform UNC syntax validation without source I/O at import."
     },
     "CHANGELOG.md": {
-      "purpose": "Henry preset 0.1.1 rendering repair and direct launcher with 0.1.0 visual failure retained.",
-      "sha256": "ab2df0b9a055a319f66f238e4ce153ca8676b4d39f259520e17d1a1cdcffa88a",
-      "bytes": 11289,
-      "inputs": "Records clean CI test correction and Henry-first guide; runtime versions unchanged."
+      "purpose": "Consolidated editor 0.7.8 and Henry 0.1.2 behavior/version history.",
+      "sha256": "954e2699c4a2a88144bbe8f5b4cbe5601d19a858f74827597f83aa03a0e6ef4b",
+      "bytes": 12408,
+      "inputs": "Shared config and Slicer discovery changes; earlier history retained."
     },
     "AGENTS.md": {
-      "purpose": "Public source-maintenance contract without personal configuration.",
-      "sha256": "0788f0dc2b62125834ecf7852e636e0a275a4b4a18f9bdfcccaf91ffc941d327",
-      "bytes": 1336,
-      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+      "purpose": "Source-maintenance contract allowing the user-approved shared atlas config.",
+      "sha256": "4dad847b7a403c33932f2eabb48cae4490d088940721f168390f04baa4630bbf",
+      "bytes": 1522,
+      "inputs": "Credentials, source data and personal machine configuration remain excluded."
     },
     ".gitignore": {
-      "purpose": "Exclude external data, edits, runtime receipts and private configuration.",
-      "sha256": "8085d02d583590eb4359594fa37bb0015ede5c1a3e1d5fe91ead55d4dc3f1121",
-      "bytes": 376,
-      "inputs": "Ignore explicit personal local_atlas_config.json; external atlas data and receipts remain excluded."
+      "purpose": "Exclude external data, generated receipts and credentials; shared atlas config is tracked.",
+      "sha256": "2f3a850dcf1d7a7fac7660a67b1a089f7827f474dc066f677e7acef889cf2447",
+      "bytes": 352,
+      "inputs": "The prior local-only ignore rule is removed."
     },
     "requirements.txt": {
       "purpose": "Package bounds mirrored by environment.yml. CLI install is the Conda recipe.",
@@ -67,16 +67,16 @@
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     ".github/workflows/tests.yml": {
-      "purpose": "Synthetic tests on Ubuntu and Windows using the armins-cli Conda recipe.",
-      "sha256": "b3aeb7ea6cc06262dd52b0bb708e376c61a58e6d2163cdeeed6eb10dfa423b74",
-      "bytes": 798,
-      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+      "purpose": "Ubuntu/Windows synthetic CI using Conda without shell init.",
+      "sha256": "295c04f5f635f8b89d649e0340072d83f4226c6938c636bd34a1c95bd9f6c491",
+      "bytes": 938,
+      "inputs": "Setup-miniconda v4 run-init false after prior Windows init failure; explicit conda run."
     },
     "docs/project_note.md": {
-      "purpose": "2026-10-26 rendering defect correction, native screenshots, direct launch evidence and review steps.",
-      "sha256": "74cea95b5f5a0aaaf1eb7d319cabe555669c84a7debde94b378011e0ebcd2f30",
-      "bytes": 27870,
-      "inputs": "2026-10-26 clean CI failure diagnosis, hermetic 53-test rerun and Henry-first operator guide."
+      "purpose": "Living ARMins journal with current setup and historical validation.",
+      "sha256": "3b99b7fab48c64b23868d0808a2ca57d5f3d18062d7b8eb6170e8ae473d7a5e4",
+      "bytes": 29814,
+      "inputs": "2026-10-26 shared config, adaptive discovery, 55 tests and native 5.12.3 load."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
@@ -97,10 +97,10 @@
       "inputs": "Registered baseline and standalone changes"
     },
     "tests/test_preparation.py": {
-      "purpose": "Synthetic NIfTI/CLI preparation, provenance and non-overwrite tests.",
-      "sha256": "dd1dfe67ecc18a5c3f0b3ca9fa9e97a05dba1ec97bff6c156e24b81ac9d4fbf1",
-      "bytes": 15242,
-      "inputs": "Explicit local-config precedence test now passes both synthetic input paths and runs without personal config."
+      "purpose": "Synthetic preparation and shared config precedence/UNC parsing tests.",
+      "sha256": "08016270d7a23e4eb3096ae7d2fe608c2946ddf8559f41b25f131a9628e015db",
+      "bytes": 15784,
+      "inputs": "All test UNC paths are synthetic; no server access."
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
@@ -151,12 +151,24 @@
       "bytes": 100
     },
     "henry_preset.py": {
-      "purpose": "Dual ordinary-Python/Slicer entry point for two left cortical ARM6 groups with hidden source labelmap and explicit slice-label clearing.",
-      "sha256": "30a78ab4d0e3d8ecfcbc04fd7f885087a6f3593e9cba7c754f8ba8db5b6b84d8",
-      "bytes": 8837,
-      "inputs": "Dual ordinary-Python/Slicer entry point for two left cortical ARM6 groups with hidden source labelmap and explicit slice-label clearing.",
-      "version": "0.1.1 (local/unreleased)",
+      "purpose": "Henry 0.1.2 dual ordinary-Python/Slicer entry with adaptive local Slicer discovery.",
+      "sha256": "d6fd451d91f9eb29061d034b53565e7f3ce0e63fa0a0f5a487b6dd8bf0bcb12f",
+      "bytes": 12975,
+      "inputs": "Shared atlas_config.json; two independent left CL segmentation groups.",
+      "version": "0.1.2 (local/unreleased)",
       "status": "candidate; technical mask equality only"
+    },
+    "tests/test_henry_launcher.py": {
+      "purpose": "Synthetic adaptive Slicer discovery and launcher tests.",
+      "inputs": "Version order, folder layouts, registry/PATH candidates, explicit override, missing install.",
+      "sha256": "f4cb40b74e902902c909ccb3454dc4d6802ab508b80c263fda71eac8eeb3ec38",
+      "bytes": 2790
+    },
+    "atlas_config.json": {
+      "purpose": "User-approved tracked shared server atlas input paths.",
+      "inputs": "Exactly three declared UNC paths: template, ARM6 atlas and hierarchy; no credentials or data.",
+      "sha256": "1212bb99f9aff3d3eea3c72a24e369f434d575ddc9e49398870d32dd47590241",
+      "bytes": 402
     }
   },
   "manifest_self": {
@@ -930,5 +942,25 @@
   "superseded_viewer_source_hashes_20261026": {
     "show_cl_level6.py": "ee9664667425008ea4a9bb38bfb3161555536c69e539d5b5e3e24343ac5002d2",
     "show_cl_insula_level6.py": "288bf5bf7d9d6350fbac06f8c468af9124044bcc97428aeb9d49d55d131d21ba"
+  },
+  "current_shared_config_0_7_8": {
+    "path": "atlas_config.json",
+    "tracked_requested_by_user": true,
+    "keys": [
+      "template",
+      "atlas",
+      "hierarchy"
+    ],
+    "source_data_bundled": false,
+    "import_checks_server": false
+  },
+  "current_launcher_0_1_2": {
+    "tested_date": "2026-10-26",
+    "synthetic_tests": 55,
+    "auto_selected": "3D Slicer 5.12.3",
+    "native_log": "Slicer 5.12.3 loaded UNC template and ARM6; Henry reported 8 visible Insula and 133 hidden cortex segments; no logged VTK errors",
+    "visual": "Parent agent observed colored left overlays in three planes; scientific anatomy not accepted",
+    "ci": "new v4 no-init workflow pending push",
+    "adaptive_cases": "numeric versions, stable/preview, common folder spellings, PATH, registry candidates, explicit path, missing install, unrelated executable rejection"
   }
 }
