@@ -74,9 +74,9 @@
     },
     "docs/project_note.md": {
       "purpose": "Living ARMins journal with current setup and historical validation.",
-      "sha256": "b464a8aee8aad4f542c82027afc5b5756fc1d3852fc26bc449409c453908c0ba",
-      "bytes": 31115,
-      "inputs": "2026-10-26 shared config, adaptive discovery, 55 tests and native 5.12.3 load."
+      "sha256": "298f4d4ae6acfcf7ad37ba1988775e88a0d281c7c81128c8ab0a4afe88845945",
+      "bytes": 31163,
+      "inputs": "2026-10-26 shared config, adaptive discovery, 57 tests, native 5.12.3 load and CI pass"
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
@@ -969,6 +969,6 @@
     "ordinary_python_preflight": "all three actual server inputs readable; synthetic missing hierarchy, incomplete checkout and malformed config fail before Slicer spawn",
     "native_slicer": "5.12.3 fresh process PID 39728 / child 20852 logged successful hierarchy, UNC template/ARM6 loads and 8 visible Insula plus 133 hidden cortex segments",
     "other_pc": "blank scene reported; File Explorer reaches server atlas root; exact Slicer traceback/version and root cause pending",
-    "ci": "prior Ubuntu passed, Windows Git Bash conda PATH failure; PowerShell CI correction pending push"
+    "ci": "Run 40306176609 passed Windows and Ubuntu, including 57 synthetic tests"
   }
 }

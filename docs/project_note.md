@@ -62,8 +62,8 @@ operation. Template images remain external references; source data are preserved
   tests passed.
 - Current CI at f63f756: Ubuntu passed all checks, Windows setup v4 succeeded
   but the first doctor command failed because `conda` was absent in Git Bash
-  login PATH. Switched the CI step shell to PowerShell; new CI verification is
-  pending.
+  login PATH. Switched the CI step shell to PowerShell. Run
+  40306176609 passed on Windows and Ubuntu, including all 57 synthetic tests.
 
 ### 2026-10-26 | Agent Codex | Supplied atlas config and installed Slicer discovery (editor 0.7.8, Henry 0.1.2)
 
