@@ -1,7 +1,7 @@
 """Synthetic NIfTI preparation and portable CLI checks for ARMins.
 
-Version: 0.7.4 (local/unreleased)
-Last updated: 2026-10-22
+Version: 0.7.7 (local/unreleased)
+Last updated: 2026-10-26
 Change history: CHANGELOG.md
 Status: candidate
 """
@@ -51,6 +51,29 @@ class PrepareLevel6Tests(unittest.TestCase):
         header = (REPO / "armins.py").read_text(encoding="utf-8").splitlines()
         version_line = next(line for line in header if line.startswith("Version:"))
         self.assertEqual(version_line.removeprefix("Version: "), armins.VERSION)
+
+    def test_explicit_local_atlas_config_precedence_and_errors(self):
+        config = self.root / "local_atlas_config.json"
+        self.assertEqual(armins._read_local_atlas_config(config), {})
+        paths = {"template": str(self.template_path),
+                 "atlas": str(self.atlas_path),
+                 "hierarchy": str(self.root / "ARM_key_table.csv")}
+        config.write_text(json.dumps(paths), encoding="utf-8")
+        self.assertEqual(armins._read_local_atlas_config(config), paths)
+        with patch.object(armins, "_LOCAL_ATLAS_CONFIG", paths), \
+                patch.dict(armins.os.environ, {"ARMINS_TEMPLATE": str(self.root / "wrong.nii.gz")}):
+            self.assertEqual(armins._preset_path("ARMINS_TEMPLATE", "template"), self.template_path.resolve())
+            self.assertEqual(armins._resolved_inputs(self.root / "explicit.nii.gz", None)[0],
+                             (self.root / "explicit.nii.gz").resolve())
+        with patch.object(armins, "_LOCAL_ATLAS_CONFIG", {}), \
+                patch.dict(armins.os.environ, {"ARMINS_TEMPLATE": str(self.template_path)}):
+            self.assertEqual(armins._preset_path("ARMINS_TEMPLATE", "template"), self.template_path.resolve())
+        config.write_text("{broken", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "invalid local atlas config"):
+            armins._read_local_atlas_config(config)
+        config.write_text(json.dumps({**paths, "atlas": "relative.nii.gz"}), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "absolute path"):
+            armins._read_local_atlas_config(config)
 
     def _save_template(self):
         nib.save(nib.Nifti1Image(self.template, self.affine), str(self.template_path))
@@ -213,7 +236,12 @@ class PrepareLevel6Tests(unittest.TestCase):
         report = json.loads(result.stdout)
         missing = {c["name"] for c in report["checks"] if not c["ready"]}
         self.assertEqual(missing, {"numpy", "nibabel"})
-        self.assertIn("conda env create -f environment.yml", report["guidance"])
+        self.assertEqual(report["guidance"], [
+            "conda env create -f environment.yml",
+            "conda activate armins-cli",
+            "Existing environment: conda env update -n armins-cli -f environment.yml",
+        ])
+        self.assertFalse(any("pip" in line or "requirements.txt" in line for line in report["guidance"]))
         version = subprocess.run(command + ["--version"], capture_output=True, text=True, cwd=self.root)
         self.assertEqual(version.returncode, 0, version.stderr)
         self.assertEqual(version.stdout.strip(), f"ARMins {armins.VERSION}")

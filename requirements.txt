@@ -1,2 +1,4 @@
+# Package bounds mirrored by environment.yml. Install the CLI with Conda:
+#   conda env create -f environment.yml
 numpy>=1.24,<3
 nibabel>=5.1,<6

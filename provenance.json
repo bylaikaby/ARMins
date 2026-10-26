@@ -1,7 +1,7 @@
 {
   "schema": "armins.provenance.v1",
-  "recorded_date": "2026-10-23",
-  "tool_version": "0.7.5 (local/unreleased)",
+  "recorded_date": "2026-10-26",
+  "tool_version": "0.7.7 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
     {
@@ -31,22 +31,22 @@
   ],
   "files": {
     "README.md": {
-      "purpose": "Main operator guide, official AFNI download/setup links, settings and review steps.",
-      "sha256": "f7521f914cf7ce3271089ebd8d9b792c12c135e3009c01bb8050838a2b5223d9",
-      "bytes": 30301,
-      "inputs": "User-provided opening description/attribution preserved verbatim; expanded from tested 0.7.0 GUI/API and official AFNI/Slicer documentation."
+      "purpose": "Current one-command Henry preset 0.1.1 launch, exact group labels, source table, visibility review and flowchart.",
+      "sha256": "edf454d1e56c081dc1f73e5efbc8a2cb5736606c1015ddd73494d5b40b6406c1",
+      "bytes": 34675,
+      "inputs": "Current one-command Henry preset 0.1.1 launch, exact group labels, source table, visibility review and flowchart."
     },
     "armins.py": {
       "purpose": "Standalone Slicer editor, exact mirror validation and optional NIfTI preparation CLI.",
-      "sha256": "fa8ac68021aae0614f87aca995f6a825dae870ae3e9e359a158033d7392c62fc",
-      "bytes": 106391,
-      "inputs": "Published0.7.4 plus teal Work on selected regions action and independent working-hemisphere preservation for bilateral selection; numeric/atlas algorithms unchanged."
+      "sha256": "925b59ab4227d8a07b24bab23a65b5deb66bb0a563c14a44fa59653afd24dfaf",
+      "bytes": 107502,
+      "inputs": "0.7.7 explicit ignored local atlas configuration; input selection precedence changed, scientific algorithms unchanged."
     },
     "CHANGELOG.md": {
-      "purpose": "Consolidated version and behavior history; local/unreleased candidate.",
-      "sha256": "5ff823df0a1ff383c805166b88df35eb415e1a310ff6f74a2fc545f8756f8d6e",
-      "bytes": 7194,
-      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+      "purpose": "Henry preset 0.1.1 rendering repair and direct launcher with 0.1.0 visual failure retained.",
+      "sha256": "e117fd887c1cc280a4b879d03ff5c58faadbf02df305c390f8027955b279c79a",
+      "bytes": 10756,
+      "inputs": "Henry preset 0.1.1 rendering repair and direct launcher with 0.1.0 visual failure retained."
     },
     "AGENTS.md": {
       "purpose": "Public source-maintenance contract without personal configuration.",
@@ -56,27 +56,27 @@
     },
     ".gitignore": {
       "purpose": "Exclude external data, edits, runtime receipts and private configuration.",
-      "sha256": "2f3a850dcf1d7a7fac7660a67b1a089f7827f474dc066f677e7acef889cf2447",
-      "bytes": 352,
-      "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
+      "sha256": "8085d02d583590eb4359594fa37bb0015ede5c1a3e1d5fe91ead55d4dc3f1121",
+      "bytes": 376,
+      "inputs": "Ignore explicit personal local_atlas_config.json; external atlas data and receipts remain excluded."
     },
     "requirements.txt": {
-      "purpose": "Ordinary-Python CLI and synthetic-test dependencies; Slicer uses bundled NumPy.",
-      "sha256": "416c9b351d362470a0ecf96135fe36f97428ce4e19559424278af9a006ed8b9b",
-      "bytes": 31,
+      "purpose": "Package bounds mirrored by environment.yml. CLI install is the Conda recipe.",
+      "sha256": "fb3aa8414f1e2ed74b4e4d96ef43cf2ba569bc1afbd28a9ae6c08959ab9ad06c",
+      "bytes": 145,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     ".github/workflows/tests.yml": {
-      "purpose": "Synthetic tests on Ubuntu and Windows with Python 3.12.",
-      "sha256": "65a85a7ed181217bbb7b042462f4132ae4541c3014bd4b7b44eafede6944afeb",
-      "bytes": 1088,
+      "purpose": "Synthetic tests on Ubuntu and Windows using the armins-cli Conda recipe.",
+      "sha256": "b3aeb7ea6cc06262dd52b0bb708e376c61a58e6d2163cdeeed6eb10dfa423b74",
+      "bytes": 798,
       "inputs": "ARMins setup/validation work on 2026-10-22; synthetic fixtures for tests"
     },
     "docs/project_note.md": {
-      "purpose": "Scientific choices, operations journal, current status and priority review guide.",
-      "sha256": "7e76b3c8b7bca83f6aa880c228f4a3dd647947de09504a16af7baf65945ef321",
-      "bytes": 14633,
-      "inputs": "Observed source comparison, design, 49-test suite, provider pairing audit and native behavior evidence from 2026-10-22."
+      "purpose": "2026-10-26 rendering defect correction, native screenshots, direct launch evidence and review steps.",
+      "sha256": "348bcfd647d26cd78d41be442c5f22f66ba0444c47d00b671f8086741f267024",
+      "bytes": 26521,
+      "inputs": "2026-10-26 rendering defect correction, native screenshots, direct launch evidence and review steps."
     },
     "docs/atlas_setup.png": {
       "purpose": "Privacy-reviewed native Slicer setup-help capture from the tested module.",
@@ -98,9 +98,9 @@
     },
     "tests/test_preparation.py": {
       "purpose": "Synthetic NIfTI/CLI preparation, provenance and non-overwrite tests.",
-      "sha256": "3a9993d678a7a3dba077f5ae3f2140f4f58567f79411faf2aac87521f81d5faa",
-      "bytes": 13355,
-      "inputs": "Synthetic NIfTI fixtures plus installed/missing-dependency, version and wrong-interpreter subprocess checks."
+      "sha256": "08c15edf7eabda48bc5a257ad9e4164f0f3c935433aac694605ea2fb355de8c7",
+      "bytes": 15231,
+      "inputs": "Focused missing/malformed/relative config and precedence coverage added; synthetic suite 53 passed."
     },
     "tests/slicer_smoke.py": {
       "purpose": "Isolated native Slicer design and mirror/save/reload test runner.",
@@ -141,7 +141,7 @@
     "environment.yml": {
       "purpose": "Optional isolated Conda CLI runtime, not a GUI/Slicer installer.",
       "inputs": "Python 3.12, conda-forge NumPy >=1.24,<3 and nibabel >=5.1,<6; bounded recipe, resolved versions recorded by CI.",
-      "sha256": "fb84968c37419fdbe37e1eb51a512dbd80b5c3e8f6ad6cedc1ebb2d89ecc9d93",
+      "sha256": "94145895538a70d635910efa15af4c0fcde1a841bc4a7da64844a6fad5c7736f",
       "bytes": 288
     },
     ".gitattributes": {
@@ -149,6 +149,14 @@
       "inputs": "Observed cloud clone line-ending differences; no scientific data changed.",
       "sha256": "790bbdb68463747c34f91f2c422e4e029ec2adc9fa8b45b4095668cb8d7497b9",
       "bytes": 100
+    },
+    "henry_preset.py": {
+      "purpose": "Dual ordinary-Python/Slicer entry point for two left cortical ARM6 groups with hidden source labelmap and explicit slice-label clearing.",
+      "sha256": "30a78ab4d0e3d8ecfcbc04fd7f885087a6f3593e9cba7c754f8ba8db5b6b84d8",
+      "bytes": 8837,
+      "inputs": "Dual ordinary-Python/Slicer entry point for two left cortical ARM6 groups with hidden source labelmap and explicit slice-label clearing.",
+      "version": "0.1.1 (local/unreleased)",
+      "status": "candidate; technical mask equality only"
     }
   },
   "manifest_self": {
@@ -845,6 +853,72 @@
         "pip Ubuntu",
         "Conda Ubuntu"
       ]
+    },
+    "explicit_local_config_0_7_7": {
+      "status": "passed",
+      "synthetic_tests": 53,
+      "native_slicer_behavior_checks": 11,
+      "local_config_without_input_environment": true,
+      "live_gui_status": "Insula preset inputs validated and groups loaded in separate visible Slicer 5.12.0 window",
+      "scope": "Technical config/startup/GUI load only; no anatomical acceptance",
+      "tested_module_sha256": "925b59ab4227d8a07b24bab23a65b5deb66bb0a563c14a44fa59653afd24dfaf",
+      "receipt": "work/explicit_config_native_20261026/behavior_receipt.json",
+      "live_gui_receipt": "work/explicit_config_native_20261026/live_gui_receipt.json"
+    },
+    "cl_level6_viewers_0_1_0": {
+      "status": "superseded by henry_preset.py; prior technical evidence retained",
+      "slicer_version": "5.12.0",
+      "all_cl_segments": 133,
+      "exact_cl_ins_subtree_segments": 2,
+      "all_imported_masks_equal_source_ids": true,
+      "source_hashes_unchanged": true,
+      "no_bilateral_label_overlay": true,
+      "scope": "Technical import and voxel equality; visual anatomical acceptance pending",
+      "receipt": "work/cl_level6_views_20261026/native_views_receipt.json",
+      "tested_script_sha256": {
+        "show_cl_level6.py": "ee9664667425008ea4a9bb38bfb3161555536c69e539d5b5e3e24343ac5002d2",
+        "show_cl_insula_level6.py": "288bf5bf7d9d6350fbac06f8c468af9124044bcc97428aeb9d49d55d131d21ba"
+      }
+    },
+    "henry_preset_0_1_0": {
+      "status": "technical masks passed; visual rendering failed",
+      "slicer_version": "5.12.0",
+      "groups": {
+        "left_insula": 8,
+        "left_cortex": 133
+      },
+      "insula_visible_cortex_hidden": true,
+      "each_imported_mask_equals_its_source_id": true,
+      "no_bilateral_label_layer_or_CR_segment": true,
+      "source_hashes_unchanged": true,
+      "scope": "Technical identity/voxel/display verification; scientific anatomical acceptance pending",
+      "receipt": "work/cl_level6_views_20261026/native_views_receipt.json",
+      "tested_script_sha256": "233fe6695ab558b2a7af58cb46a8c4e2c83d93689086f1b2c895a14c6a617f5a"
+    },
+    "henry_preset_0_1_1": {
+      "status": "passed",
+      "slicer_version": "5.12.0",
+      "groups": {
+        "left_insula": 8,
+        "left_cortex": 133
+      },
+      "each_imported_mask_equals_its_source_id": true,
+      "insula_and_cortex_colored_overlays_visually_checked": true,
+      "reported_vtk_error_phrases_absent": true,
+      "source_hashes_unchanged": true,
+      "ordinary_python_help_version_and_mocked_launcher_passed": true,
+      "scope": "Technical geometry/mask/display verification; scientific anatomical acceptance pending",
+      "receipt": "work/cl_level6_views_20261026/native_views_receipt.json",
+      "screenshots": [
+        "work/cl_level6_views_20261026/henry_insula_011.png",
+        "work/cl_level6_views_20261026/henry_cortex_011.png"
+      ],
+      "tested_script_sha256": "30a78ab4d0e3d8ecfcbc04fd7f885087a6f3593e9cba7c754f8ba8db5b6b84d8",
+      "ordinary_python_launch": "passed: new Slicer process opened from D:/ARMins with python henry_preset.py"
     }
+  },
+  "superseded_viewer_source_hashes_20261026": {
+    "show_cl_level6.py": "ee9664667425008ea4a9bb38bfb3161555536c69e539d5b5e3e24343ac5002d2",
+    "show_cl_insula_level6.py": "288bf5bf7d9d6350fbac06f8c468af9124044bcc97428aeb9d49d55d131d21ba"
   }
 }

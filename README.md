@@ -22,7 +22,7 @@ review and saving. Optional command-line operations follow the GUI workflow.
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs) ·
 [Command line](#optional-command-line-tools)
 
-Current tool version: **0.7.5 (local/unreleased)**. The GUI title/header and
+Current tool version: **0.7.7 (local/unreleased)**. The GUI title/header and
 `python armins.py --version` show the same value. See [CHANGELOG.md](CHANGELOG.md)
 for dated changes and validation.
 
@@ -87,8 +87,8 @@ conda run -n armins-cli python armins.py doctor
 The tool preflight requires Python >=3.10. The recipe selects Python 3.12,
 NumPy >=1.24,<3 and nibabel >=5.1,<6.
 It is a bounded recipe, not a platform lockfile; CI records the actual resolved
-package list. Ordinary Python with `python -m pip install -r requirements.txt`
-is also supported. `doctor` is read-only, prints versions/missing requirements
+package list. Synthetic tests on Windows and Ubuntu install this same recipe.
+`doctor` is read-only, prints versions/missing requirements
 and exits 1 when the selected runtime is not ready; it remains usable without
 NumPy/nibabel. `check`/`prepare` also preflight their dependencies. No atlas data,
 packages or settings are downloaded or changed automatically by the GUI/doctor.
@@ -140,6 +140,75 @@ this workflow. ARMins validates the selected files and performs no registration
 or resampling.
 
 ![NMT v2.1 setup help in Slicer](docs/atlas_setup.png)
+
+## Henry preset: two left cortical level-6 groups
+
+`henry_preset.py` is a single Slicer entry point for viewing two independent
+segmentation groups in one **fresh blank Slicer scene**. It reads the ignored
+`local_atlas_config.json` beside `armins.py`, loads the full symmetric NMT
+intensity template once, and uses the supplied ARM6 image and hierarchy table.
+The source files are read only. The full bilateral ARM labelmap is removed
+from the scene after import and is never used as a slice overlay.
+
+| Group in Segment Editor/Data | Exact declared IDs | Initial display |
+|---|---|---|
+| Henry preset v0.1.1 - Left insula (8 CL L6) | ARMins' previous eight CL Insula preset parcels: 39, 41, 42, 43, 226, 228, 229, 230 | Visible and selected |
+| Henry preset v0.1.1 - Left cortex (all CL L6) | All cortical namespace, left, level-6 `CL_*` leaves (133 in the verified hierarchy) | Hidden; select/show when needed |
+
+These are **separate groups** with the same atlas source masks. Editing one
+will not update the other. They contain no right or subcortical parcels. The
+Insula group is the editor's previous eight-label preset; it is broader than
+the exact two-leaf `CL_Ins` hierarchy subtree.
+
+From an ordinary Windows Python terminal, run the script directly:
+
+```powershell
+cd D:\ARMins
+python henry_preset.py
+```
+
+This launcher uses the installed Slicer 5.12.0 in the current user's
+`LOCALAPPDATA` by default. If it is elsewhere, pass
+`python henry_preset.py --slicer "C:\path\to\Slicer.exe"`. Use
+`--help` or `--version` without starting Slicer. It opens a fresh Slicer
+process and runs this same file there; no packages or data are installed.
+
+Or, in a fresh Slicer Python Console:
+
+```python
+import runpy
+_ = runpy.run_path(r"D:\ARMins\henry_preset.py", run_name="__main__")
+```
+
+The script resolves its own checkout folder, so the shell's current directory
+does not matter. It refuses a scene already containing volumes or segmentations
+rather than changing existing work. It fits the **full template extent**, then
+positions slice planes through the Insula mask. In **Data**, use the eye icons to hide Insula and show the cortex group; then
+select the matching cortex segmentation in **Segment Editor**. Reverse those
+eye icons and select Insula again to return. It creates no output file
+automatically.
+
+```mermaid
+flowchart LR
+  O[Operator starts henry_preset.py in fresh Slicer] --> C[Ignored local_atlas_config.json]
+  C --> I[NMT intensity + ARM6 labels + hierarchy CSV]
+  I --> V[Validate grid and exact left cortical L6 IDs]
+  V --> M[Build Insula 8 and cortex 133 masks in memory]
+  M --> S[Two independent CL-only segmentation groups]
+  S --> Q[Operator reviews names, laterality and boundaries]
+  S -. Separate manual workflow .-> E[ARMins editor / scientific analysis]
+```
+
+| Source input | Purpose |
+|---|---|
+| `local_atlas_config.json` | Explicit absolute paths for the three immutable inputs; ignored by Git. |
+| `NMT_v2.1_sym_SS.nii.gz` | Full-reference intensity background and voxel geometry. |
+| `ARM_6_in_NMT_v2.1_sym.nii.gz` | Source integer labels; selected masks are built in memory. |
+| `ARM_key_table.csv` | Declares cortical namespace, side, level and segment names. |
+
+Each segment has its source integer ID tag and each group records source paths
+and hashes. Technical mask equality does not establish anatomical acceptance.
+Inspect both groups' laterality, identities and boundaries before scientific use.
 
 ## Why work on one hemisphere?
 
@@ -370,7 +439,8 @@ from parcel partition checks and remain hidden in mirror candidates.
 
 | Setting | Default | Effect |
 |---|---|---|
-| Template and ARM6 inputs | Blank GUI selectors | Choose matching 3-D volumes explicitly. |
+| Template and ARM6 inputs | Blank GUI selectors without local settings | Choose matching 3-D volumes explicitly. |
+| `local_atlas_config.json` | Absent | Optional explicit per-checkout template, atlas and hierarchy paths; ignored by Git. Takes precedence over `ARMINS_*` input variables. |
 | `ARMINS_TEMPLATE` | Unset | Optional template path before opening ARMins. |
 | `ARMINS_ATLAS` | Unset | Optional 3-D ARM level-6 path. |
 | `ARMINS_OUTPUT_DIR` | `./outputs` | Initial folder for save dialogs. |
@@ -379,6 +449,22 @@ from parcel partition checks and remain hidden in mirror candidates.
 | `ARMINS_HIERARCHY` | Unset | Optional path to the explicit ARM hierarchy CSV. |
 | Working hemisphere | L | Choose L or R; the initial editor focus and mirror direction follow this selection. |
 | `refresh_scopes` | `False` | Preserve a changed scope and refuse reuse; explicit `run(refresh_scopes=True)` replaces it from the source atlas. Save edits first. |
+
+To keep explicit machine paths in this checkout, create `local_atlas_config.json`
+next to `armins.py` with exactly these three absolute paths (Windows UNC paths
+are supported):
+
+```json
+{"template": "C:\\atlas\\NMT_v2.1_sym_SS.nii.gz",
+ "atlas": "C:\\atlas\\ARM_6_in_NMT_v2.1_sym.nii.gz",
+ "hierarchy": "C:\\atlas\\ARM_key_table.csv"}
+```
+
+The file is ignored by Git. ARMins reads it when imported. Invalid JSON, missing
+keys and relative paths fail clearly. Explicit `configure(...)`, GUI selections
+and CLI `--template`/`--atlas` inputs still override the starting paths; the
+`ARMINS_*` environment inputs remain fallback when the local file is absent.
+Restart Slicer or reload the Python module after changing this file.
 
 Equivalent programmatic configuration inside Slicer:
 
@@ -419,11 +505,11 @@ integers. Full bilateral integer-label NIfTI export/merge is not implemented.
 
 ## Optional command-line tools
 
-These terminal commands require ordinary Python with the optional CLI/test
-dependencies:
+These terminal commands use the Conda environment `armins-cli`:
 
 ```sh
-python -m pip install -r requirements.txt
+conda env create -f environment.yml
+conda activate armins-cli
 python armins.py --help
 python armins.py check --template /path/to/NMT_v2.1_sym_SS.nii.gz --atlas /path/to/ARM_6_in_NMT_v2.1_sym.nii.gz --dry-run
 ```
@@ -504,9 +590,10 @@ and [CHANGELOG.md](CHANGELOG.md). Software checks do not establish anatomical
 boundaries, physical laterality or biological symmetry. The user's original
 startup failure remains unidentified without its traceback and runtime version.
 
-Rerun the synthetic tests in the CLI environment:
+Rerun the synthetic tests in the Conda CLI environment:
 
 ```sh
+conda activate armins-cli
 python armins.py doctor
 python -m unittest discover -s tests -p "test_*.py" -v
 ```

@@ -1,7 +1,7 @@
 """Create bilateral full-insula editing scopes and mirror candidates.
 
-Version: 0.7.5 (local/unreleased)
-Last updated: 2026-10-23
+Version: 0.7.7 (local/unreleased)
+Last updated: 2026-10-26
 Change history: CHANGELOG.md
 Status: experimental
 
@@ -29,7 +29,7 @@ try:
 except Exception:  # Slicer is optional for CLI preparation and array validation.
     slicer = None
 
-VERSION = "0.7.5 (local/unreleased)"
+VERSION = "0.7.7 (local/unreleased)"
 
 
 def _runtime_provenance(nib=None):
@@ -71,8 +71,9 @@ def dependency_report(mode="cli"):
                   "nibabel >=5.1,<6 is required for NIfTI CLI tools")
         except Exception as exc:
             check("nibabel", False, error=str(exc))
-        guidance = ["conda env create -f environment.yml", "conda activate armins-cli",
-                    "Alternative: python -m pip install -r requirements.txt"]
+        guidance = ["conda env create -f environment.yml",
+                    "conda activate armins-cli",
+                    "Existing environment: conda env update -n armins-cli -f environment.yml"]
     else:
         check("3D Slicer application", _has_slicer_scene(),
               getattr(getattr(slicer, "app", None), "applicationVersion", None),
@@ -99,11 +100,38 @@ def _environment_path(name):
     return Path(value).expanduser().resolve() if value else None
 
 
-REF_PATH = _environment_path("ARMINS_TEMPLATE")
-ARM_PATH = _environment_path("ARMINS_ATLAS")
+LOCAL_ATLAS_CONFIG_PATH = Path(__file__).with_name("local_atlas_config.json")
+
+
+def _read_local_atlas_config(path=LOCAL_ATLAS_CONFIG_PATH):
+    """Read explicit untracked local inputs; reject ambiguous settings."""
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid local atlas config {path}: {exc}") from exc
+    if not isinstance(data, dict) or set(data) != {"template", "atlas", "hierarchy"}:
+        raise ValueError(f"local atlas config {path} must contain template, atlas, hierarchy only")
+    for key, value in data.items():
+        if not isinstance(value, str) or not value or not Path(value).is_absolute():
+            raise ValueError(f"local atlas config {path}: {key} must be an absolute path")
+    return data
+
+
+_LOCAL_ATLAS_CONFIG = _read_local_atlas_config()
+
+
+def _preset_path(name, key):
+    value = _LOCAL_ATLAS_CONFIG.get(key)
+    return Path(value).resolve() if value else _environment_path(name)
+
+
+REF_PATH = _preset_path("ARMINS_TEMPLATE", "template")
+ARM_PATH = _preset_path("ARMINS_ATLAS", "atlas")
 OUTPUT_DIR = _environment_path("ARMINS_OUTPUT_DIR") or (Path.cwd() / "outputs").resolve()
 ACTIVE_OUTPUT_DIR = OUTPUT_DIR
-HIERARCHY_PATH = _environment_path("ARMINS_HIERARCHY")
+HIERARCHY_PATH = _preset_path("ARMINS_HIERARCHY", "hierarchy")
 T1_NAME, ARM_NAME = "NMT_v2.1_sym_SS", "ARM_L6_in_NMT_v2.1_sym"
 # Public source hashes identify the known NMT reference/ARM-L6 pair regardless of
 # its local install path. Other inputs are handled as an explicit custom pair.
@@ -153,7 +181,7 @@ MIRROR_HELPER_TAG = "Insula.MirrorRole"
 
 
 def _discover_hierarchy_path(atlas_path=None):
-    configured = _environment_path("ARMINS_HIERARCHY")
+    configured = HIERARCHY_PATH
     if configured and configured.is_file():
         return configured
     if atlas_path:
@@ -2039,7 +2067,7 @@ def main(argv=None):
         report = dependency_report("cli")
         if not report["ready"]:
             missing = "; ".join(f"{c['name']}: {c['error']}" for c in report['checks'] if not c['ready'])
-            parser.error(f"Dependency check failed: {missing}. Run doctor; use conda env create -f environment.yml or pip install -r requirements.txt")
+            parser.error(f"Dependency check failed: {missing}. Run doctor; use conda env create -f environment.yml and conda activate armins-cli")
     if args.command == "check":
         profile = _cli_region_profile(args.hierarchy, args.region, args.region_level, args.side)
         result = check_inputs(args.template, args.atlas, level=args.level, region_profile=profile)

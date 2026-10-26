@@ -1,5 +1,5 @@
-# Version: 0.7.4 (local/unreleased)
-# Last updated: 2026-10-22
+# Version: 0.7.6 (local/unreleased)
+# Last updated: 2026-10-26
 # Change history: CHANGELOG.md
 # Optional CLI only; the GUI uses the official Slicer application.
 name: armins-cli

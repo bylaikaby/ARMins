@@ -1,6 +1,6 @@
 # ARMins project note
 
-Updated 2026-10-23 | Agent Codex | Asia/Shanghai.
+Updated 2026-10-26 | Asia/Shanghai.
 
 ## Current status and entry points
 
@@ -8,7 +8,8 @@ ARMins supports expert curation of the insula atlas and provides a standalone
 candidate editor for ARM level-6 region groups in symmetric NMT v2.1. The
 original insula preset remains the default. README.md is the complete GUI and
 operator/download guide;
-armins.py is the executable source; CHANGELOG.md and provenance.json record
+armins.py is the executable editor source; `henry_preset.py` is the current
+two-group CL-only Slicer entry point; CHANGELOG.md and provenance.json record
 version changes and technical validation. No tagged release or new anatomical
 atlas is accepted by this source snapshot.
 
@@ -26,9 +27,17 @@ operation. Template images remain external references; source data are preserved
 
 ## Current verification and review
 
-- Current source: 0.7.5; current and historical validation runs below are
-  tied to the exact armins.py hash in provenance.json. No local config/cache or
-  atlas data was copied to cloud VMs; only public provider downloads were used.
+- Current source: 0.7.7 local/unreleased. CLI install is the Conda recipe `environment.yml`.
+  The authoritative personal atlas inputs are in ignored `local_atlas_config.json`
+  beside `armins.py`; README documents the three-key format and precedence.
+  A separate visible Slicer 5.12.0 window loaded the built-in Insula preset
+  from this file with all three input environment variables removed. Technical
+  loading and display were observed; anatomy still needs scientific review.
+  Historical 0.7.5 validation below stays tied to that snapshot; its
+  `armins.py` sha256 was
+  `fa8ac68021aae0614f87aca995f6a825dae870ae3e9e359a158033d7392c62fc`.
+  No local config/cache or atlas data was copied to cloud VMs; only public
+  provider downloads were used.
 - Review in order: (1) follow README's GUI versus CLI dependency path; `doctor`
   should report ready; (2) inspect Actions receipts/checks for the selected OS;
   (3) open the atlas in a supported desktop graphics environment and judge its
@@ -37,6 +46,59 @@ operation. Template images remain external references; source data are preserved
   first traceback and Slicer version; cloud startup/import/load paths passed.
 
 ## Operations journal
+
+### 2026-10-26 | Agent Codex | Henry preset rendering and direct launch (viewer 0.1.1)
+
+- Visual review corrected the earlier 0.1.0 technical-only pass: the GUI listed both groups but emitted repeated VTK lookup-table/scalar-type errors and showed no colored overlays. Mask equality alone did not verify rendering. The earlier 0.1.0 native receipt is retained as a failed rendering candidate, not promoted.
+- The 0.1.1 script loads the temporary ARM source labelmap hidden, keeps its import color tables until after removing the source node, and clears Red/Yellow/Green label-volume IDs explicitly. Native Slicer 5.12.0 rerun passed exact source-ID mask equality for all 8+133 segments, initial Insula visibility, cortex visibility switch, no bilateral label layer, unchanged source hashes and absence of the two reported VTK error phrases. Captures `work/cl_level6_views_20261026/henry_insula_011.png` and `henry_cortex_011.png` were independently visually checked: colored left CL overlays appear in all three slice planes on the full NMT background. This is technical display QC, not anatomical acceptance.
+- Added ordinary-Python direct launch: `cd D:\ARMins; python henry_preset.py` opens the installed Slicer 5.12.0 with this same file; `--slicer` overrides its location. Help/version and mocked launch argv passed. The actual command opened a new Slicer process (launcher PID 69208, app PID 45096) while earlier scenes remained open. No dependencies or source data were installed/changed. README is the current one-command guide.
+- Priority review: (1) open the new Henry preset Slicer window and confirm the eight Insula CL parcels and full NMT extent; (2) in Data hide Insula and show cortex, then select the cortex group in Segment Editor and confirm 133 CL parcels; (3) inspect laterality, identities and boundaries in three planes before any scientific use. Existing user scenes and annotations remain untouched.
+
+### 2026-10-26 | Agent Codex | Henry preset consolidation (viewer 0.1.0)
+
+- Latest user request superseded the two separate viewer scripts with one `henry_preset.py` entry point in a fresh Slicer scene. It loads the full NMT template once and creates two independent segmentations from the same immutable ARM6 source: left Insula, eight previous preset labels, visible/selected by default; left cortex, all 133 declared CL L6 labels, hidden but selectable. The full bilateral labelmap is removed from the scene and not overlaid. Manual edits to one group do not synchronize into the other. ARMins editor 0.7.7 and existing user scenes remain untouched.
+- The separate-scene native receipt at `work/cl_level6_views_20261026/native_views_receipt.json` records exact per-segment source-ID voxel equality for 8+133 masks, both group visibility states, absence of right/subcortical segments and bilateral label layers, and unchanged template/atlas/hierarchy source hashes. Earlier two-script and exact-subtree trials are preserved in the same receipt as superseded evidence. The disposable native test script was removed after recording the result.
+- README is the current operator guide with one startup command, a source table and flowchart. Review the visible Insula group first; in Data use the eye icons to hide Insula and show cortex, then select the cortex segmentation in Segment Editor. No derivative is written automatically. Scientific anatomical acceptance and final human visual inspection remain pending.
+
+### 2026-10-26 | Agent Codex | Correction: previous eight Insula parcels
+
+- User clarified that the second script should show the previous ARMins Insula preset, not the exact two-leaf `CL_Ins` hierarchy subtree. The earlier exact-subtree choice and its two-label native test remain historical evidence below and in the shared receipt, marked superseded. `show_cl_insula_level6.py` now uses immutable `DEFAULT_FULL_INS_IDS["L"]`: 39, 41, 42, 43, 226, 228, 229, 230. The all-CL script remains 133 labels. No editor or atlas source changed.
+- The current final entry points are `show_cl_level6.py` (133 left cortical L6 labels) and `show_cl_insula_level6.py` (the previous eight left Insula parcels). See README for the fresh-scene commands and exact-source table. Technical and visual verification are recorded with the combined receipt; scientific anatomical acceptance remains open.
+
+### 2026-10-26 | Agent Codex | Two CL-only level-6 views (viewer 0.1.0)
+
+- User superseded the broader additive-editor request with two simple views: all left cortical CL level-6 labels, and the exact `CL_Ins` hierarchy subtree. The selected hierarchy has 133 cortical left `CL_*` L6 IDs, all present in the configured ARM6 image. Exact `CL_Ins` is the cortical left level-5 index 227 subtree with two L6 descendants, `CL_Ia/Id` 228 and `CL_Ig` 229; the editor's eight-label Insula preset is a different operational group.
+- Added `show_cl_level6.py` as the shared Slicer import/view entry point and `show_cl_insula_level6.py` as the exact-subtree selector. Both read the ignored explicit local config, validate source grid and identities, import only selected left-cortical labels into one segmentation, remove the temporary full ARM labelmap node, clear the bilateral label layer, fit the full NMT background and move slice planes through the selected mask. They refuse a populated scene and leave ARMins 0.7.7 editor logic unchanged. Source acquisition dates are not established by these filenames; no data migration, registration, export or scientific acceptance is claimed.
+- Bounded read-only selection check: 133/133 declared all-CL IDs and 2/2 exact-subtree IDs were present. Native Slicer 5.12.0 separate-scene verification in `work/cl_level6_views_20261026/native_views_receipt.json` passed for both views: 133 and 2 imported segments respectively; each segment's voxel mask matched its tagged source ARM6 integer ID; no label volume node or label slice layer remained; template, atlas and hierarchy source hashes were unchanged. A current-directory-independent import probe passed. The one disposable native test harness was removed after recording the receipt.
+- Opened one additional normal Slicer window for the exact two-label subtree, preserving other user windows and scenes. Technical visual review of the final window remains pending; operator should inspect CL laterality, full template field of view, two parcel names/overlays and boundaries before scientific use. README holds commands, source table and workflow chart; CHANGELOG holds viewer 0.1.0 history.
+
+### 2026-10-26 | Agent Codex | Explicit local atlas config (0.7.7)
+
+- User correction: persistent Windows environment alone did not reliably preset the live Slicer GUI; explicit local inputs were required. Added ignored `local_atlas_config.json` beside `armins.py` with the verified IP UNC template, ARM6 and hierarchy paths. It takes precedence over input environment variables; explicit function, CLI and GUI selections remain available. Output directory is unchanged. Malformed/incomplete/nonabsolute config fails clearly. No atlas algorithm or Insula mode behavior changed.
+- Verification: `armins.py --version` reports 0.7.7; a read-only `check --dry-run` validated the known template/ARM6 hashes and matching 0.25-mm grids. Focused config precedence/errors test passed, then 53 synthetic tests passed. Native Slicer 5.12.0 behavior smoke in a separate scene with all three input environment variables removed passed 11 checks (`work/explicit_config_native_20261026/behavior_receipt.json`), including the actual Insula GUI Validate/load and mirror controls; source hashes were unchanged.
+- A separate normal visible Slicer window was opened for review, preserving the original user process and scene. Its GUI reported `Insula preset` and `Inputs validated and groups loaded`; `work/explicit_config_native_20261026/live_gui_receipt.json` records that status and the three config paths. Visual technical inspection found the preset fields populated, eight CL parcels plus scope in the editor, and MRI/parcel overlays in three planes. No painting, source edits or anatomical acceptance were performed.
+- After config-only startup succeeded, cleared only the three User environment values created earlier, after checking that they still exactly matched the known UNC preset. Next review: inspect laterality, parcel identity and boundaries in the visible window before editing; use the ignored config for this checkout and restart/reload ARMins after changing it. The original reported startup error remains separately unidentified.
+
+### 2026-10-26 | Agent Codex | Personal atlas preset
+
+- Request: preset the local symmetric NMT v2.1 template, supplied ARM6 labels and matching hierarchy table for ARMins.
+- Before change, the three per-user ARMINS environment values were unset. Verified all three files on the mapped atlas drive were nonempty; set ARMINS_TEMPLATE, ARMINS_ATLAS and ARMINS_HIERARCHY in the Windows User environment only. Kept atlas files, repository code and output-directory setting unchanged.
+- Read-only `armins-cli` `check --dry-run` validated the 256 x 312 x 200 matching 0.25-mm template/ARM6 grids, reported expected source hashes and `writes: []`. The three User environment settings were reread successfully. A bounded WM_SETTINGCHANGE/Environment broadcast returned successfully for future Windows-launched processes.
+- Existing Slicer/ARMins 0.7.6 process predates this preset. Its GUI initially showed blank input fields and a prior load error; the template intensity field was then filled through the UI, while the ARM6 and hierarchy fields remain blank. No scene loading or editing was performed. Restart Slicer to pick up all three preset defaults; GUI loading and anatomical acceptance remain untested.
+- Correction after user report: the mapped-drive preset above was unsuitable for the live Slicer process. Replaced all three User settings with verified direct IP UNC paths to the same immutable template, ARM6 and hierarchy sources, reread the stored values and broadcast WM_SETTINGCHANGE/Environment successfully. The current Slicer process still needs its own in-process configuration or restart to inherit these values.
+- Independent Slicer 5.12.0 `behavior` smoke test (`work/unc_insula_native_20261026/behavior_receipt.json`) imported ARMins 0.7.6 in a separate scene with the UNC paths and passed 11 checks, including the actual Insula preset Validate/load button and mirror button; original template/atlas hashes stayed unchanged. The earlier load error text is the expected guard for ARM hierarchy mode with no explicitly chosen hierarchy result, not evidence that the built-in Insula preset fails. The live existing Slicer GUI and anatomical boundaries remain for operator review.
+
+
+### 2026-10-26 | CLI install path
+
+- Request: use Conda for the CLI install in the repository, rather than a
+  one-off pip virtual environment.
+- Change: README, `doctor` guidance, `requirements.txt` note, and synthetic CI
+  use `environment.yml` / `armins-cli` on Windows and Ubuntu. No atlas, mirror,
+  or GUI algorithm change. Tool version 0.7.6.
+- Local check: `armins-cli` doctor ready (Python 3.12.15, NumPy 2.5.4,
+  nibabel 5.4.2) and 52 synthetic tests passed. The 0.7.5 cloud pip jobs
+  remain historical evidence. This entry does not claim a new cloud run.
 
 ### 2026-10-23 | Agent Codex | Fresh Windows 11 command/API validation
 

@@ -2,6 +2,68 @@
 
 One consolidated history. README.md is the operator guide.
 
+## Henry preset viewer 0.1.1 - 2026-10-26 (local/unreleased)
+
+- Hide the temporary ARM labelmap during import, retain its color tables until
+  the source node is removed, and explicitly clear all slice label IDs. This
+  fixes observed VTK lookup-table/scalar-type errors and restores colored CL
+  overlays in axial, coronal and sagittal views. Group masks and identities
+  remain the same.
+- Make `python henry_preset.py` a standard-library launcher for the installed
+  Slicer application, with `--slicer`, `--help` and `--version`. The same file
+  still builds groups when run by Slicer. No separate launcher or dependency
+  install is needed.
+- Validation: ordinary-Python help/version and mocked launcher argv passed;
+  native Slicer 5.12.0 checked both groups' 141 exact source masks, visibility
+  switching and rendered captures; the reported VTK error phrases were absent.
+  Scientific anatomical acceptance remains pending. The 0.1.0 native mask
+  check passed but its visual rendering failed and is retained below.
+
+## Henry preset viewer 0.1.0 - 2026-10-26 (local/unreleased)
+
+- Consolidated the two temporary CL-only viewers into one `henry_preset.py`
+  entry point: separate left Insula eight-parcel and left cortex 133-parcel
+  segmentations in one fresh Slicer scene. Insula starts visible, cortex hidden.
+  Source files and ARMins editor 0.7.7 remain unchanged. The groups do not
+  synchronize later manual edits.
+- Validates exact table identities and matching source grids, imports only CL
+  labels, clears the full atlas label overlay, fits the complete NMT reference
+  and records source hashes on both groups. Native Slicer verification and
+  limits are recorded in the project note; scientific acceptance is pending.
+
+## Superseded two-script CL viewers 0.1.0 - 2026-10-26 (local/unreleased)
+
+- Added `show_cl_level6.py` for the 133 declared left cortical level-6 ARM
+  labels and `show_cl_insula_level6.py` for ARMins' previous eight-label left
+  Insula preset. The second reuses the first viewer; neither changes the ARMins
+  0.7.7 editor, source atlas or working segmentation nodes.
+- Both scripts use the ignored explicit local config, import one selected-label
+  segmentation, clear the full atlas label layer, fit the full template and
+  position slice planes through the selected mask. They refuse a populated
+  scene. Validated by source-ID voxel equality in Slicer (see project note).
+
+## 0.7.7 - 2026-10-26 (local/unreleased)
+
+- Read an ignored explicit `local_atlas_config.json` beside `armins.py` for
+  absolute template, ARM6 and hierarchy paths. This removes the need for
+  inherited Windows environment settings in a personal checkout; explicit
+  function/GUI/CLI paths still override, and environment inputs remain fallback.
+- Reject malformed or incomplete local configuration clearly at import.
+  Atlas algorithms and the Insula preset selection are unchanged.
+- Validation: focused configuration tests and native Slicer checks recorded in
+  the project note. No anatomical acceptance is implied.
+
+## 0.7.6 - 2026-10-26 (local/unreleased)
+
+- CLI setup, `doctor` guidance, and synthetic CI use the Conda recipe
+  `environment.yml` (`armins-cli`) on Windows and Ubuntu. Atlas, mirror, and
+  GUI behavior are unchanged.
+- Recorded 0.7.4 and 0.7.5 pip CI results stay historical. The 0.7.5
+  `armins.py` sha256 was
+  `fa8ac68021aae0614f87aca995f6a825dae870ae3e9e359a158033d7392c62fc`.
+- Validation: local `armins-cli` doctor ready (Python 3.12.15, NumPy 2.5.4,
+  nibabel 5.4.2) and 52 synthetic tests passed. No new cloud run.
+
 ## 0.7.5 - 2026-10-23 (local/unreleased)
 
 - Add an explicit Windows 11 ARM64 cloud target with OS/build/architecture
