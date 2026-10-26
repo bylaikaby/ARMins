@@ -1,6 +1,6 @@
 """Show Henry's two left-cortical ARM level-6 segmentation groups in 3D Slicer.
 
-Version: 0.1.2 (local/unreleased)
+Version: 0.1.3 (local/unreleased)
 Last updated: 2026-10-26
 Change history: CHANGELOG.md
 Status: candidate
@@ -10,30 +10,64 @@ Uses the supplied atlas_config.json beside armins.py. No source files are writte
 """
 
 from pathlib import Path
+from pathlib import PureWindowsPath
+import json
 import re
 import shutil
 import sys
 
-VERSION = "0.1.2 (local/unreleased)"
+VERSION = "0.1.3 (local/unreleased)"
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 
+def _checkout_files():
+    missing = [name for name in ("armins.py", "arm_hierarchy.py", "atlas_config.json")
+               if not (SCRIPT_DIR / name).is_file()]
+    if missing:
+        raise FileNotFoundError(f"incomplete ARMins checkout at {SCRIPT_DIR}: missing "
+                                f"{', '.join(missing)}; keep the repository files together")
+
+
+def _input_paths(config_path=None):
+    """Check the supplied inputs with stdlib before starting Slicer."""
+    config_path = Path(config_path) if config_path is not None else SCRIPT_DIR / "atlas_config.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read atlas config {config_path}: {exc}") from exc
+    if not isinstance(config, dict) or set(config) != {"template", "atlas", "hierarchy"}:
+        raise ValueError(f"atlas config {config_path} needs template, atlas and hierarchy only")
+    paths = {}
+    for key in ("template", "atlas", "hierarchy"):
+        value = config[key]
+        if not isinstance(value, str) or not value or not (
+                Path(value).is_absolute() or PureWindowsPath(value).is_absolute()):
+            raise ValueError(f"atlas config {config_path}: {key} must be an absolute path")
+        path = (Path("//" + value.lstrip("\\").replace("\\", "/"))
+                if value.startswith("\\\\") and sys.platform != "win32" else Path(value))
+        try:
+            with path.open("rb") as stream:
+                stream.read(1)
+        except OSError as exc:
+            raise OSError(f"{key} input is not readable at {path}: {exc}; "
+                          "check server connection and account permissions") from exc
+        paths[key] = path
+    return paths
+
+
 def show():
     """Create separate left Insula (8) and left cortex (all CL L6) groups."""
+    print(f"Henry preset {VERSION}: validating config and server inputs", flush=True)
+    _checkout_files()
+    paths = _input_paths()
     import numpy as np
     import slicer
     import armins
     from arm_hierarchy import ArmHierarchy
 
-    config = armins._read_atlas_config()
-    if not config:
-        raise ValueError(f"explicit atlas config is required: {armins.ATLAS_CONFIG_PATH}")
-    paths = {key: Path(value).resolve() for key, value in config.items()}
-    for key, path in paths.items():
-        if not path.is_file():
-            raise FileNotFoundError(f"{key} input is unavailable: {path}")
+    print(f"Henry preset {VERSION}: reading hierarchy", flush=True)
     hierarchy = ArmHierarchy.from_file(paths["hierarchy"])
     cortical = [entry for entry in hierarchy.search("CL_", side="L", level=6)
                 if entry["namespace"] == "C" and entry["abbreviation"].startswith("CL_")]
@@ -45,6 +79,7 @@ def show():
             slicer.mrmlScene.GetNumberOfNodesByClass("vtkMRMLSegmentationNode"):
         raise RuntimeError("open a fresh Slicer scene; existing scene nodes were preserved")
 
+    print(f"Henry preset {VERSION}: loading template and ARM6", flush=True)
     template = slicer.util.loadVolume(str(paths["template"]), properties={"name": "NMT_v2.1_sym_SS"})
     source = slicer.util.loadLabelVolume(str(paths["atlas"]),
                                          properties={"name": "ARM_L6_source_temporary", "show": False})
@@ -103,8 +138,9 @@ def show():
         segmentation.GetDisplayNode().SetVisibility(visible)
         return segmentation, masked
 
-    insula, insula_masked = build_group(insula_ids, "Henry preset v0.1.2 - Left insula (8 CL L6)", True)
-    cortex, _ = build_group(set(by_id), "Henry preset v0.1.2 - Left cortex (all CL L6)", False)
+    print(f"Henry preset {VERSION}: building left segmentation groups", flush=True)
+    insula, insula_masked = build_group(insula_ids, "Henry preset v0.1.3 - Left insula (8 CL L6)", True)
+    cortex, _ = build_group(set(by_id), "Henry preset v0.1.3 - Left cortex (all CL L6)", False)
     slicer.mrmlScene.RemoveNode(source)
     for colors in import_colors:
         slicer.mrmlScene.RemoveNode(colors)
@@ -121,7 +157,7 @@ def show():
     editor = slicer.modules.segmenteditor.widgetRepresentation().self().editor
     editor.setSegmentationNode(insula)
     editor.setSourceVolumeNode(template)
-    print(f"Henry preset {VERSION}: left insula {len(insula_ids)} parcels visible; left cortex {len(by_id)} parcels hidden/selectable")
+    print(f"Henry preset {VERSION}: left insula {len(insula_ids)} parcels visible; left cortex {len(by_id)} parcels hidden/selectable", flush=True)
     return {"insula": insula, "cortex": cortex, "template": template,
             "insula_ids": sorted(insula_ids), "cortex_ids": sorted(by_id),
             "source_hashes": source_hashes}
@@ -236,8 +272,10 @@ def main(argv=None):
     parser.add_argument("--version", action="version", version=f"Henry preset {VERSION}")
     args = parser.parse_args(argv)
     try:
+        _checkout_files()
+        _input_paths()
         executable = _installed_slicer(args.slicer)
-    except FileNotFoundError as exc:
+    except (OSError, ValueError) as exc:
         parser.error(str(exc))
     process = subprocess.Popen([str(executable), "--no-splash", "--python-script",
                                 str(Path(__file__).resolve())], cwd=str(SCRIPT_DIR))
@@ -247,6 +285,23 @@ def main(argv=None):
 
 if __name__ == "__main__":
     if _running_in_slicer():
-        show()
+        import qt
+        import slicer
+        import traceback
+
+        def _safe_show():
+            try:
+                show()
+            except Exception:
+                details = traceback.format_exc()
+                print(details, file=sys.stderr, flush=True)
+                try:
+                    slicer.util.pythonConsole().show()
+                except Exception:
+                    pass
+                qt.QMessageBox.critical(slicer.util.mainWindow(),
+                                        "Henry preset startup failed", details)
+
+        qt.QTimer.singleShot(0, _safe_show)
     else:
         raise SystemExit(main())

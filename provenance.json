@@ -32,8 +32,8 @@
   "files": {
     "README.md": {
       "purpose": "Current Henry 0.1.2 one-command guide, supplied server config and adaptive Slicer search.",
-      "sha256": "d8703d8b1562dc16cd19a68b1a69ddf8a1394db107d075f6c4f73bbad49a3588",
-      "bytes": 35845,
+      "sha256": "0bedd33971dbbcfa1f64c81f8adb975c83ea5147ca7934de5ba77f1cbe5020dc",
+      "bytes": 36325,
       "inputs": "Shared config and 8/133 left cortical groups; manual editor remains separate."
     },
     "armins.py": {
@@ -44,8 +44,8 @@
     },
     "CHANGELOG.md": {
       "purpose": "Consolidated editor 0.7.8 and Henry 0.1.2 behavior/version history.",
-      "sha256": "954e2699c4a2a88144bbe8f5b4cbe5601d19a858f74827597f83aa03a0e6ef4b",
-      "bytes": 12408,
+      "sha256": "1fce2e4804539bcce1a1d104bdd1a6c635acce8527a856bb1a897aae0d424e1c",
+      "bytes": 13061,
       "inputs": "Shared config and Slicer discovery changes; earlier history retained."
     },
     "AGENTS.md": {
@@ -68,14 +68,14 @@
     },
     ".github/workflows/tests.yml": {
       "purpose": "Ubuntu/Windows synthetic CI using Conda without shell init.",
-      "sha256": "295c04f5f635f8b89d649e0340072d83f4226c6938c636bd34a1c95bd9f6c491",
-      "bytes": 938,
-      "inputs": "Setup-miniconda v4 run-init false after prior Windows init failure; explicit conda run."
+      "sha256": "4822989c5ba0666aba91dfda244b67180053714fda75224f93e88d64fa186a1f",
+      "bytes": 930,
+      "inputs": "Conda v4 no-init; PowerShell retains action PATH on Windows after prior Git Bash failure."
     },
     "docs/project_note.md": {
       "purpose": "Living ARMins journal with current setup and historical validation.",
-      "sha256": "3b99b7fab48c64b23868d0808a2ca57d5f3d18062d7b8eb6170e8ae473d7a5e4",
-      "bytes": 29814,
+      "sha256": "b464a8aee8aad4f542c82027afc5b5756fc1d3852fc26bc449409c453908c0ba",
+      "bytes": 31115,
       "inputs": "2026-10-26 shared config, adaptive discovery, 55 tests and native 5.12.3 load."
     },
     "docs/atlas_setup.png": {
@@ -151,18 +151,18 @@
       "bytes": 100
     },
     "henry_preset.py": {
-      "purpose": "Henry 0.1.2 dual ordinary-Python/Slicer entry with adaptive local Slicer discovery.",
-      "sha256": "d6fd451d91f9eb29061d034b53565e7f3ce0e63fa0a0f5a487b6dd8bf0bcb12f",
-      "bytes": 12975,
+      "purpose": "Henry 0.1.3 launcher and native Slicer viewer with source preflight and visible startup errors.",
+      "sha256": "5d7d3aa6a810e5ac9b024c4df07b03d8fa56259c66b84d2995a14a6dd205316c",
+      "bytes": 15464,
       "inputs": "Shared atlas_config.json; two independent left CL segmentation groups.",
-      "version": "0.1.2 (local/unreleased)",
+      "version": "0.1.3 (local/unreleased)",
       "status": "candidate; technical mask equality only"
     },
     "tests/test_henry_launcher.py": {
-      "purpose": "Synthetic adaptive Slicer discovery and launcher tests.",
+      "purpose": "Synthetic adaptive Slicer discovery plus incomplete-clone and missing-input preflight tests.",
       "inputs": "Version order, folder layouts, registry/PATH candidates, explicit override, missing install.",
-      "sha256": "f4cb40b74e902902c909ccb3454dc4d6802ab508b80c263fda71eac8eeb3ec38",
-      "bytes": 2790
+      "sha256": "5823a73eaff3a0c97e846b53649d9583c38ed6ef2dac8ddbd356befd75c1438c",
+      "bytes": 4870
     },
     "atlas_config.json": {
       "purpose": "User-approved tracked shared server atlas input paths.",
@@ -962,5 +962,13 @@
     "visual": "Parent agent observed colored left overlays in three planes; scientific anatomy not accepted",
     "ci": "new v4 no-init workflow pending push",
     "adaptive_cases": "numeric versions, stable/preview, common folder spellings, PATH, registry candidates, explicit path, missing install, unrelated executable rejection"
+  },
+  "current_launcher_0_1_3": {
+    "tested_date": "2026-10-26",
+    "synthetic_tests": 57,
+    "ordinary_python_preflight": "all three actual server inputs readable; synthetic missing hierarchy, incomplete checkout and malformed config fail before Slicer spawn",
+    "native_slicer": "5.12.3 fresh process PID 39728 / child 20852 logged successful hierarchy, UNC template/ARM6 loads and 8 visible Insula plus 133 hidden cortex segments",
+    "other_pc": "blank scene reported; File Explorer reaches server atlas root; exact Slicer traceback/version and root cause pending",
+    "ci": "prior Ubuntu passed, Windows Git Bash conda PATH failure; PowerShell CI correction pending push"
   }
 }

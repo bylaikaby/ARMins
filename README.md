@@ -14,7 +14,7 @@ do not establish a finished anatomical atlas release.
 [Atlas setup](#atlas-setup) · [Manual editing](#manual-editing-in-armins) ·
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs)
 
-Current versions: **Henry preset 0.1.2** and **ARMins editor 0.7.8** (both
+Current versions: **Henry preset 0.1.3** and **ARMins editor 0.7.8** (both
 local/unreleased). Their GUI labels or `--version` commands agree with
 [CHANGELOG.md](CHANGELOG.md). Neither is an anatomically accepted atlas release.
 
@@ -34,7 +34,10 @@ local/unreleased). Their GUI labels or `--version` commands agree with
    python henry_preset.py
    ```
 
-   This opens a fresh Slicer process. For another Slicer installation, use
+   The launcher first checks its companion files and reads one byte from each
+   configured source. If a path is missing or denied, it stops with the named
+   file and reason before opening Slicer. This opens a fresh Slicer process.
+   For another Slicer installation, use
    `python henry_preset.py --slicer "C:\path\to\Slicer.exe"` (see the
    [Henry preset guide](#henry-preset-two-left-cortical-level-6-groups)).
    The **Left insula** group (8 previous ARMins CL parcels) starts visible and
@@ -169,8 +172,8 @@ from the scene after import and is never used as a slice overlay.
 
 | Group in Segment Editor/Data | Exact declared IDs | Initial display |
 |---|---|---|
-| Henry preset v0.1.2 - Left insula (8 CL L6) | ARMins' previous eight CL Insula preset parcels: 39, 41, 42, 43, 226, 228, 229, 230 | Visible and selected |
-| Henry preset v0.1.2 - Left cortex (all CL L6) | All cortical namespace, left, level-6 `CL_*` leaves (133 in the verified hierarchy) | Hidden; select/show when needed |
+| Henry preset v0.1.3 - Left insula (8 CL L6) | ARMins' previous eight CL Insula preset parcels: 39, 41, 42, 43, 226, 228, 229, 230 | Visible and selected |
+| Henry preset v0.1.3 - Left cortex (all CL L6) | All cortical namespace, left, level-6 `CL_*` leaves (133 in the verified hierarchy) | Hidden; select/show when needed |
 
 These are **separate groups** with the same atlas source masks. Editing one
 will not update the other. They contain no right or subcortical parcels. The
@@ -190,6 +193,10 @@ Slicer by numeric version. To override, pass
 `python henry_preset.py --slicer "C:\path\to\Slicer.exe"`. Use
 `--help` or `--version` without starting Slicer. It opens a fresh Slicer
 process and runs this same file there; no packages or data are installed.
+If Slicer itself fails during startup or atlas import, a dialog shows the
+Python traceback and opens the Python Console. Record that traceback and the
+Slicer version when reporting an empty scene; reachability of the server folder
+alone does not prove every configured file loaded.
 
 Or, in a fresh Slicer Python Console:
 

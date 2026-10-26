@@ -27,7 +27,7 @@ operation. Template images remain external references; source data are preserved
 
 ## Current verification and review
 
-- Current source: editor 0.7.8 and Henry viewer 0.1.2, both local/unreleased.
+- Current source: editor 0.7.8 and Henry viewer 0.1.3, both local/unreleased.
   The one tracked `atlas_config.json` supplies the three shared server UNC
   inputs. The source data stay external. Ordinary Python auto-discovers the
   newest stable installed Slicer; an explicit `--slicer` path overrides it.
@@ -43,6 +43,27 @@ operation. Template images remain external references; source data are preserved
   first traceback and Slicer version; cloud startup/import/load paths passed.
 
 ## Operations journal
+
+### 2026-10-26 | Agent Codex | Cross-PC blank startup investigation (Henry 0.1.3)
+
+- User reports Slicer opens with an empty scene on another PC; File Explorer
+  can reach the configured UNC atlas root there. No Slicer traceback or version
+  from that PC is available yet, so the specific cause is unconfirmed. Source
+  review found launcher 0.1.2 opened Slicer before checking its companion
+  modules or individual source files; failures in `show()` then appeared only
+  in Slicer's Python console/log.
+- Added stdlib companion/config/per-file readability preflight before spawn.
+  Native loading now waits for the Qt event loop and reports stages; any
+  exception shows its traceback in an error dialog and opens the Python
+  Console. No source or scene files are written. This improves diagnosis and
+  stops known missing-input cases before blank GUI startup; it does not prove
+  the cross-PC issue is fixed. Synthetic missing-hierarchy and incomplete-clone
+  cases stopped before `Popen`; malformed JSON was rejected. All 57 synthetic
+  tests passed.
+- Current CI at f63f756: Ubuntu passed all checks, Windows setup v4 succeeded
+  but the first doctor command failed because `conda` was absent in Git Bash
+  login PATH. Switched the CI step shell to PowerShell; new CI verification is
+  pending.
 
 ### 2026-10-26 | Agent Codex | Supplied atlas config and installed Slicer discovery (editor 0.7.8, Henry 0.1.2)
 

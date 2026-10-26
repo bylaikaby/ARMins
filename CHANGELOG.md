@@ -2,6 +2,17 @@
 
 One consolidated history. README.md is the operator guide.
 
+## Henry preset viewer 0.1.3 - 2026-10-26 (local/unreleased)
+
+- Preflight the complete checkout and readability of each configured atlas
+  input using ordinary Python before opening Slicer. Missing or denied files
+  now name the exact field/path and stop before an empty Slicer window opens.
+- Run native loading after the event loop starts, print startup stages, and
+  show any Python traceback in a Slicer error dialog and console. This makes
+  startup failures visible; the cause on the other PC remains unconfirmed.
+- Use PowerShell in CI because the prior Windows Git Bash login shell reset
+  `conda` from PATH after setup-miniconda v4 succeeded.
+
 ## Henry preset viewer 0.1.2 - 2026-10-26 (local/unreleased)
 
 - Use the one supplied `atlas_config.json` for both the editor and viewer.
