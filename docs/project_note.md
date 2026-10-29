@@ -1,6 +1,6 @@
 # ARMins project note
 
-Updated 2026-10-26 | Asia/Shanghai.
+Updated 2026-10-29 | Asia/Shanghai.
 
 ## Current status and entry points
 
@@ -9,7 +9,7 @@ candidate editor for ARM level-6 region groups in symmetric NMT v2.1. The
 original insula preset remains the default. README.md is the complete GUI and
 operator/download guide;
 armins.py is the executable editor source; `henry_preset.py` is the current
-two-group CL-only Slicer entry point; CHANGELOG.md and provenance.json record
+three-group left L6 Slicer entry point; CHANGELOG.md and provenance.json record
 version changes and technical validation. No tagged release or new anatomical
 atlas is accepted by this source snapshot.
 
@@ -27,7 +27,7 @@ operation. Template images remain external references; source data are preserved
 
 ## Current verification and review
 
-- Current source: editor 0.7.8 and Henry viewer 0.1.3, both local/unreleased.
+- Current source: editor 0.7.8 and Henry viewer 0.1.4, both local/unreleased.
   The one tracked `atlas_config.json` supplies the three shared server UNC
   inputs. The source data stay external. Ordinary Python auto-discovers the
   newest stable installed Slicer; an explicit `--slicer` path overrides it.
@@ -45,6 +45,50 @@ operation. Template images remain external references; source data are preserved
   first traceback and Slicer version; cloud startup/import/load paths passed.
 
 ## Operations journal
+
+### 2026-10-29 | Agent Codex | Three-group operator steps clarified
+
+- Checked `henry_preset.py` 0.1.4 against the README: it constructs three
+  independent left segmentation nodes, starts only the eight-parcel Insula
+  group visible and selected, and uses the NMT intensity template as source
+  volume. The cortex and combined groups start hidden. The combined group
+  omits source-absent `SL_pyx` (1324), as already recorded below.
+- Clarified the existing README's Data eye-icon and Segment Editor selection
+  steps for all three groups. These controls are separate; switching one does
+  not switch the other, and edits do not propagate between groups. Added a
+  bounded `git pull --ff-only` guide for an existing clean clone on another PC;
+  local edits must be preserved and resolved first. No script, atlas source,
+  scene, or scientific definition changed.
+- Documentation was checked against the current source and internal anchors.
+  Native Slicer display on this host and anatomical acceptance remain pending.
+
+### 2026-10-29 | Agent Codex | Combined left cortex and subcortex L6 review group
+
+- Objective: show every available left cortical and subcortical ARM level-6 ROI
+  together to inspect their boundaries. Starting point was Henry viewer 0.1.3
+  with independent 8-Insula and 133-cortex groups; both are retained.
+- Explicit hierarchy search declared 133 CL and 210 SL left L6 IDs. A read-only
+  census of the supplied 256×312×200 ARM6 lattice found all 133 CL IDs and
+  209/210 SL IDs. `SL_pyx` (1324, pyramidal tract decussation) is declared but
+  absent. The combined group imports 342 present IDs, reports the omission in
+  console and node metadata, and starts hidden. Source voxels are not changed.
+  All 684 nonzero source IDs occur in the hierarchy; all source left-side IDs
+  are among the 342 selected L6 IDs. Thus there is no additional left-source
+  omission, while right-side labels are intentionally outside this view.
+  Read-only comparison with the matching supplemental SARM6 volume found the
+  same lattice/affine, 209 left SL IDs and the same absent 1324. Every nonzero
+  SARM6 voxel has the same integer ID in ARM6, and their left SL masks match
+  exactly. SARM6 therefore does not recover this missing ROI; it was not
+  merged or used as an additional source.
+- Synthetic group-selection/failure tests passed, 5/5 launcher tests passed
+  with TEMP under the writable workspace, and ordinary CLI `--version` agrees
+  with the changelog. Native Slicer rendering and exact segment-mask checks
+  remain pending because Slicer auto-discovery found no local installation in
+  this session. Anatomical boundary acceptance requires human review.
+- Review: launch in a fresh Slicer scene, hide Insula, show the combined group
+  in Data, select it in Segment Editor, and inspect CL/SL boundaries in all
+  three planes against the full NMT reference. Check for the declared 1324
+  absence before interpreting coverage. The three groups are independent.
 
 ### 2026-10-26 | Agent Codex | Cross-PC error identified as SMB logon failure
 

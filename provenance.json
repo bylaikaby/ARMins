@@ -1,6 +1,6 @@
 {
   "schema": "armins.provenance.v1",
-  "recorded_date": "2026-10-26",
+  "recorded_date": "2026-10-29",
   "tool_version": "0.7.8 (local/unreleased)",
   "status": "candidate; no tagged release or anatomical acceptance",
   "source_mapping": [
@@ -32,9 +32,9 @@
   "files": {
     "README.md": {
       "purpose": "Current Henry operator guide with exact WinError 1326 SMB authentication troubleshooting.",
-      "sha256": "48ee3afc2f3cdcccfd4b1e4cbf0cf566dcaa3540b5f5270c624071656fe7ae28",
-      "bytes": 37113,
-      "inputs": "Shared config and 8/133 left cortical groups; manual editor remains separate."
+      "sha256": "dc85aa7efad5f6944e490265e872e5f2775aefc0c707c7340f3249839b4e9013",
+      "bytes": 39592,
+      "inputs": "Shared config and 8/133/342 left L6 display groups; manual editor remains separate."
     },
     "armins.py": {
       "purpose": "ARMins 0.7.8 editor and CLI with supplied shared atlas config.",
@@ -43,9 +43,9 @@
       "inputs": "Tracked atlas_config.json; cross-platform UNC syntax validation without source I/O at import."
     },
     "CHANGELOG.md": {
-      "purpose": "Consolidated editor 0.7.8 and Henry 0.1.2 behavior/version history.",
-      "sha256": "1fce2e4804539bcce1a1d104bdd1a6c635acce8527a856bb1a897aae0d424e1c",
-      "bytes": 13061,
+      "purpose": "Consolidated editor 0.7.8 and Henry 0.1.4 behavior/version history.",
+      "sha256": "03294d4c132fe56bf9e69fadbe440d8ccfc46c3e55f0dd0b7bfeb7ed22352ee6",
+      "bytes": 13932,
       "inputs": "Shared config and Slicer discovery changes; earlier history retained."
     },
     "AGENTS.md": {
@@ -74,8 +74,8 @@
     },
     "docs/project_note.md": {
       "purpose": "Living ARMins journal with current setup and historical validation.",
-      "sha256": "1de09d2201c7c6a29085cbc1d0343f0d68ded950abf86205297df35d9c9f338b",
-      "bytes": 32357,
+      "sha256": "ff21781fb386ba1cccc591b27824107cdc1f93aff95570a0b3eefe5bab1ad8fa",
+      "bytes": 35343,
       "inputs": "2026-10-26 shared config, adaptive discovery, 57 tests, native load, green CI, and other-PC WinError 1326 diagnosis"
     },
     "docs/atlas_setup.png": {
@@ -151,18 +151,18 @@
       "bytes": 100
     },
     "henry_preset.py": {
-      "purpose": "Henry 0.1.3 launcher and native Slicer viewer with source preflight and visible startup errors.",
-      "sha256": "5d7d3aa6a810e5ac9b024c4df07b03d8fa56259c66b84d2995a14a6dd205316c",
-      "bytes": 15464,
-      "inputs": "Shared atlas_config.json; two independent left CL segmentation groups.",
-      "version": "0.1.3 (local/unreleased)",
-      "status": "candidate; technical mask equality only"
+      "purpose": "Henry 0.1.4 launcher and Slicer viewer with three independent left L6 groups.",
+      "sha256": "b642f298db880faa3efe88abbb6bc557aea57ed20ee7243cf547e8d2f5022841",
+      "bytes": 16917,
+      "inputs": "Shared atlas_config.json; 8/133/342 left L6 segmentation groups.",
+      "version": "0.1.4 (local/unreleased)",
+      "status": "candidate; native 0.1.4 rendering pending"
     },
     "tests/test_henry_launcher.py": {
       "purpose": "Synthetic adaptive Slicer discovery plus incomplete-clone and missing-input preflight tests.",
       "inputs": "Version order, folder layouts, registry/PATH candidates, explicit override, missing install.",
-      "sha256": "5823a73eaff3a0c97e846b53649d9583c38ed6ef2dac8ddbd356befd75c1438c",
-      "bytes": 4870
+      "sha256": "5b47793c82a883f9b770574fd4aa3a974dc351728ab6ee1b891501088de41b47",
+      "bytes": 5858
     },
     "atlas_config.json": {
       "purpose": "User-approved tracked shared server atlas input paths.",
@@ -962,6 +962,14 @@
     "visual": "Parent agent observed colored left overlays in three planes; scientific anatomy not accepted",
     "ci": "new v4 no-init workflow pending push",
     "adaptive_cases": "numeric versions, stable/preview, common folder spellings, PATH, registry candidates, explicit path, missing install, unrelated executable rejection"
+  },
+  "current_launcher_0_1_4": {
+    "tested_date": "2026-10-29",
+    "status": "local candidate; synthetic and source census passed; native Slicer rendering pending",
+    "source_census": "256x312x200 ARM6 lattice; 684 nonzero labels; all map to hierarchy; 133/133 CL and 209/210 SL left L6 IDs present; SL_pyx 1324 declared absent; all present left-source IDs included. Matching SARM6 left SL masks and IDs identical and 1324 absent there too",
+    "viewer_groups": "8 Insula visible; 133 cortex hidden; 342 present cortex+subcortex hidden",
+    "tests": "5/5 focused launcher/group selection tests passed with writable TEMP; CLI --version 0.1.4",
+    "native_slicer": "No Slicer.exe found by current launcher or bounded host probes; 0.1.4 GUI and exact native segment masks unverified"
   },
   "current_launcher_0_1_3": {
     "tested_date": "2026-10-26",

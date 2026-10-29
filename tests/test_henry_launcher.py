@@ -1,7 +1,7 @@
 """Bounded Henry launcher discovery checks.
 
-Version: 0.1.3 (local/unreleased)
-Last updated: 2026-10-26
+Version: 0.1.4 (local/unreleased)
+Last updated: 2026-10-29
 Change history: CHANGELOG.md
 Status: candidate
 """
@@ -19,6 +19,24 @@ import henry_preset
 
 
 class LauncherTests(unittest.TestCase):
+    def test_left_l6_selection_rejects_overlap_and_missing_insula(self):
+        class Hierarchy:
+            def __init__(self, ids):
+                self.ids = ids
+
+            def search(self, prefix, side=None, level=None):
+                self_side, namespace = ("L", "C") if prefix == "CL_" else ("L", "S")
+                return [{"index": value, "abbreviation": f"{prefix}{value}",
+                         "namespace": namespace, "side": self_side, "level": 6}
+                        for value in self.ids[namespace]]
+
+        groups = henry_preset._left_l6_groups(Hierarchy({"C": [39, 40], "S": [51]}), {39})
+        self.assertEqual(set(groups["C"]) | set(groups["S"]), {39, 40, 51})
+        with self.assertRaisesRegex(ValueError, "overlap"):
+            henry_preset._left_l6_groups(Hierarchy({"C": [39], "S": [39]}), {39})
+        with self.assertRaisesRegex(ValueError, "missing Insula"):
+            henry_preset._left_l6_groups(Hierarchy({"C": [40], "S": [51]}), {39})
+
     def test_newest_stable_and_explicit_override(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / "Program Files" / "slicer.org"

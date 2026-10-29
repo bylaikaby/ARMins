@@ -1,7 +1,7 @@
-"""Show Henry's two left-cortical ARM level-6 segmentation groups in 3D Slicer.
+"""Show Henry's left ARM level-6 segmentation groups in 3D Slicer.
 
-Version: 0.1.3 (local/unreleased)
-Last updated: 2026-10-26
+Version: 0.1.4 (local/unreleased)
+Last updated: 2026-10-29
 Change history: CHANGELOG.md
 Status: candidate
 
@@ -16,7 +16,7 @@ import re
 import shutil
 import sys
 
-VERSION = "0.1.3 (local/unreleased)"
+VERSION = "0.1.4 (local/unreleased)"
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
@@ -57,8 +57,26 @@ def _input_paths(config_path=None):
     return paths
 
 
+def _left_l6_groups(hierarchy, insula_ids):
+    """Resolve explicit left cortical and subcortical L6 IDs without guessing IDs."""
+    groups = {}
+    for prefix, namespace in (("CL_", "C"), ("SL_", "S")):
+        entries = [entry for entry in hierarchy.search(prefix, side="L", level=6)
+                   if entry["namespace"] == namespace and
+                   entry["abbreviation"].startswith(prefix)]
+        by_id = {int(entry["index"]): entry for entry in entries}
+        if not by_id or len(by_id) != len(entries):
+            raise ValueError(f"left {namespace} L6 identities are empty or ambiguous")
+        groups[namespace] = by_id
+    if set(groups["C"]) & set(groups["S"]):
+        raise ValueError("left cortical and subcortical L6 IDs overlap")
+    if not insula_ids <= set(groups["C"]):
+        raise ValueError("left cortical L6 identities are missing Insula preset IDs")
+    return groups
+
+
 def show():
-    """Create separate left Insula (8) and left cortex (all CL L6) groups."""
+    """Create left Insula, cortex, and combined cortex/subcortex L6 groups."""
     print(f"Henry preset {VERSION}: validating config and server inputs", flush=True)
     _checkout_files()
     paths = _input_paths()
@@ -69,12 +87,9 @@ def show():
 
     print(f"Henry preset {VERSION}: reading hierarchy", flush=True)
     hierarchy = ArmHierarchy.from_file(paths["hierarchy"])
-    cortical = [entry for entry in hierarchy.search("CL_", side="L", level=6)
-                if entry["namespace"] == "C" and entry["abbreviation"].startswith("CL_")]
-    by_id = {int(entry["index"]): entry for entry in cortical}
     insula_ids = set(armins.DEFAULT_FULL_INS_IDS["L"])
-    if len(by_id) != len(cortical) or not by_id or not insula_ids <= set(by_id):
-        raise ValueError("left cortical L6 identities are empty, ambiguous or missing Insula preset IDs")
+    groups = _left_l6_groups(hierarchy, insula_ids)
+    by_id = {**groups["C"], **groups["S"]}
     if slicer.mrmlScene.GetNumberOfNodesByClass("vtkMRMLVolumeNode") or \
             slicer.mrmlScene.GetNumberOfNodesByClass("vtkMRMLSegmentationNode"):
         raise RuntimeError("open a fresh Slicer scene; existing scene nodes were preserved")
@@ -93,9 +108,14 @@ def show():
     if not np.allclose(matrix, armins._node_geometry_matrix(source), rtol=0, atol=1e-4):
         raise ValueError("template and ARM6 IJK-to-RAS geometry differ")
     counts = {value: int(np.count_nonzero(labels == value)) for value in by_id}
-    missing = [value for value, count in counts.items() if count == 0]
-    if missing:
-        raise ValueError(f"declared CL L6 labels absent from ARM6: {sorted(missing)}")
+    missing_cortex = sorted(value for value in groups["C"] if counts[value] == 0)
+    if missing_cortex:
+        raise ValueError(f"declared CL L6 labels absent from ARM6: {missing_cortex}")
+    missing_subcortex = sorted(value for value in groups["S"] if counts[value] == 0)
+    for value in missing_subcortex:
+        print(f"Henry preset {VERSION}: declared subcortical L6 ID absent from ARM6: "
+              f"{value} {by_id[value]['abbreviation']}; omitted from display", flush=True)
+    present_ids = set(by_id) - set(missing_subcortex)
     source_hashes = {key: armins._sha256_file(path) for key, path in paths.items()}
     import_colors = []
     palette = ((0.17, 0.65, 0.72), (0.72, 0.35, 0.67), (0.87, 0.58, 0.24),
@@ -129,6 +149,7 @@ def show():
             segment = data.GetSegment(data.GetNthSegmentID(i))
             segment.SetTag("ARM.SourceLabelID", str(name_to_id[segment.GetName()]))
             segment.SetTag("ARM.Hemisphere", "L")
+            segment.SetTag("ARM.Namespace", by_id[name_to_id[segment.GetName()]]["namespace"])
             segment.SetTag("ARM.HierarchySHA256", hierarchy.source_sha256)
         for key, path in paths.items():
             segmentation.SetAttribute("ARM." + key.title() + "Path", str(path))
@@ -139,8 +160,10 @@ def show():
         return segmentation, masked
 
     print(f"Henry preset {VERSION}: building left segmentation groups", flush=True)
-    insula, insula_masked = build_group(insula_ids, "Henry preset v0.1.3 - Left insula (8 CL L6)", True)
-    cortex, _ = build_group(set(by_id), "Henry preset v0.1.3 - Left cortex (all CL L6)", False)
+    insula, insula_masked = build_group(insula_ids, "Henry preset v0.1.4 - Left insula (8 CL L6)", True)
+    cortex, _ = build_group(set(groups["C"]), "Henry preset v0.1.4 - Left cortex (all CL L6)", False)
+    all_left, _ = build_group(present_ids, "Henry preset v0.1.4 - Left cortex+subcortex (present L6)", False)
+    all_left.SetAttribute("ARM.DeclaredAbsentIDs", ",".join(map(str, missing_subcortex)))
     slicer.mrmlScene.RemoveNode(source)
     for colors in import_colors:
         slicer.mrmlScene.RemoveNode(colors)
@@ -157,9 +180,10 @@ def show():
     editor = slicer.modules.segmenteditor.widgetRepresentation().self().editor
     editor.setSegmentationNode(insula)
     editor.setSourceVolumeNode(template)
-    print(f"Henry preset {VERSION}: left insula {len(insula_ids)} parcels visible; left cortex {len(by_id)} parcels hidden/selectable", flush=True)
-    return {"insula": insula, "cortex": cortex, "template": template,
-            "insula_ids": sorted(insula_ids), "cortex_ids": sorted(by_id),
+    print(f"Henry preset {VERSION}: left insula {len(insula_ids)} visible; left cortex {len(groups['C'])} hidden; left cortex+subcortex {len(present_ids)} hidden/selectable; {len(missing_subcortex)} declared IDs absent", flush=True)
+    return {"insula": insula, "cortex": cortex, "all_left": all_left, "template": template,
+            "insula_ids": sorted(insula_ids), "cortex_ids": sorted(groups["C"]),
+            "all_left_ids": sorted(present_ids), "declared_absent_ids": missing_subcortex,
             "source_hashes": source_hashes}
 
 
@@ -267,7 +291,7 @@ def main(argv=None):
     import argparse
     import subprocess
 
-    parser = argparse.ArgumentParser(description="Open Henry's two left ARM L6 groups in a fresh Slicer process")
+    parser = argparse.ArgumentParser(description="Open Henry's three left ARM L6 groups in a fresh Slicer process")
     parser.add_argument("--slicer", type=Path, help="explicit path to Slicer.exe")
     parser.add_argument("--version", action="version", version=f"Henry preset {VERSION}")
     args = parser.parse_args(argv)

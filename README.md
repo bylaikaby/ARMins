@@ -5,16 +5,16 @@ This re-parcellation is performed by Henry Evrard.
 In this repo, we also provided a GUI that we built to allow similar processes to be applied to other cortices, for research groups specialised in particular cortices and looking for a finer regional annotation.
 
 This source checkout provides a simple **Henry preset** viewer and a separate
-3D Slicer editing GUI. The preset opens two left-side ARM level-6 segmentation
+3D Slicer editing GUI. The preset opens three left-side ARM level-6 segmentation
 groups; the editor supports manual refinement and candidate mirroring. Curated
 atlas files and anatomical review are separate deliverables. Source-code tests
 do not establish a finished anatomical atlas release.
 
-[Henry preset details](#henry-preset-two-left-cortical-level-6-groups) ·
+[Henry preset details](#henry-preset-three-left-level-6-groups) ·
 [Atlas setup](#atlas-setup) · [Manual editing](#manual-editing-in-armins) ·
 [Full GUI guide](#complete-editing-guide) · [Settings](#settings-and-saved-outputs)
 
-Current versions: **Henry preset 0.1.3** and **ARMins editor 0.7.8** (both
+Current versions: **Henry preset 0.1.4** and **ARMins editor 0.7.8** (both
 local/unreleased). Their GUI labels or `--version` commands agree with
 [CHANGELOG.md](CHANGELOG.md). Neither is an anatomically accepted atlas release.
 
@@ -39,17 +39,40 @@ local/unreleased). Their GUI labels or `--version` commands agree with
    file and reason before opening Slicer. This opens a fresh Slicer process.
    For another Slicer installation, use
    `python henry_preset.py --slicer "C:\path\to\Slicer.exe"` (see the
-   [Henry preset guide](#henry-preset-two-left-cortical-level-6-groups)).
+   [Henry preset guide](#henry-preset-three-left-level-6-groups)).
    The **Left insula** group (8 previous ARMins CL parcels) starts visible and
-   selected; **Left cortex** contains all
-   133 declared CL level-6 parcels and starts hidden. In **Data**, use the eye
-   icons to hide Insula and show cortex, then select cortex in **Segment
-   Editor**. The groups are independent; editing one does not update the other.
+   selected. **Left cortex** contains all 133 declared CL level-6 parcels;
+   **Left cortex+subcortex** contains 342 present CL/SL level-6 parcels. Both
+   larger groups start hidden. To switch views, use the eye icons in **Data**
+   so only the intended group is visible, then choose that same segmentation
+   in **Segment Editor > Segmentation**. Visibility and editor selection are
+   separate controls. The three groups are independent; edits in one do not
+   update either of the others.
 
-The full [Henry preset guide](#henry-preset-two-left-cortical-level-6-groups)
+The full [Henry preset guide](#henry-preset-three-left-level-6-groups)
 explains the source identities, display controls and review limits. Its launcher
 uses ordinary Python; Slicer supplies the imaging/GUI Python environment. It
 does not install packages or write an atlas derivative.
+
+### Update an existing clone on another PC
+
+In PowerShell on that PC, close Slicer, open the existing ARMins clone, and
+check for local changes before updating:
+
+```powershell
+cd C:\path\to\ARMins
+git status --short --branch
+git pull --ff-only origin main
+python henry_preset.py --version
+```
+
+Run `git pull` only when `git status` shows a clean working tree. If it lists
+local edits, preserve them and resolve their intended place first; do not use
+`reset --hard` or overwrite atlas files. `--ff-only` stops if the clone has
+diverged instead of creating an unreviewed merge. The checkout's
+`atlas_config.json` declares source paths, but the remote files must still be
+readable from that PC's own user session. After updating, launch
+`python henry_preset.py` in a fresh Slicer scene.
 
 ## Manual editing in ARMins
 
@@ -161,9 +184,9 @@ or resampling.
 
 ![NMT v2.1 setup help in Slicer](docs/atlas_setup.png)
 
-## Henry preset: two left cortical level-6 groups
+## Henry preset: three left level-6 groups
 
-`henry_preset.py` is a single Slicer entry point for viewing two independent
+`henry_preset.py` is a single Slicer entry point for viewing three independent
 segmentation groups in one **fresh blank Slicer scene**. It reads the supplied
 `atlas_config.json` beside `armins.py`, loads the full symmetric NMT
 intensity template once, and uses the supplied ARM6 image and hierarchy table.
@@ -172,11 +195,17 @@ from the scene after import and is never used as a slice overlay.
 
 | Group in Segment Editor/Data | Exact declared IDs | Initial display |
 |---|---|---|
-| Henry preset v0.1.3 - Left insula (8 CL L6) | ARMins' previous eight CL Insula preset parcels: 39, 41, 42, 43, 226, 228, 229, 230 | Visible and selected |
-| Henry preset v0.1.3 - Left cortex (all CL L6) | All cortical namespace, left, level-6 `CL_*` leaves (133 in the verified hierarchy) | Hidden; select/show when needed |
+| Henry preset v0.1.4 - Left insula (8 CL L6) | ARMins' previous eight CL Insula preset parcels: 39, 41, 42, 43, 226, 228, 229, 230 | Visible and selected |
+| Henry preset v0.1.4 - Left cortex (all CL L6) | All cortical namespace, left, level-6 `CL_*` leaves (133 in the verified hierarchy) | Hidden; select/show when needed |
+| Henry preset v0.1.4 - Left cortex+subcortex (present L6) | All 133 CL and 209 present SL left level-6 parcels; declared `SL_pyx` (1324) is absent from the supplied ARM6 volume and is reported at startup | Hidden; select/show for boundary review |
+
+The matching supplemental SARM6 volume also lacks `SL_pyx` (1324). Its
+present left SL voxels have the same IDs and masks as ARM6, so it supplies no
+additional left ROI for this view.
 
 These are **separate groups** with the same atlas source masks. Editing one
-will not update the other. They contain no right or subcortical parcels. The
+will not update the others. The first two groups contain no subcortical parcels;
+none contains right-side parcels. The
 Insula group is the editor's previous eight-label preset; it is broader than
 the exact two-leaf `CL_Ins` hierarchy subtree.
 
@@ -208,18 +237,36 @@ _ = runpy.run_path(r"D:\ARMins\henry_preset.py", run_name="__main__")
 The script resolves its own checkout folder, so the shell's current directory
 does not matter. It refuses a scene already containing volumes or segmentations
 rather than changing existing work. It fits the **full template extent**, then
-positions slice planes through the Insula mask. In **Data**, use the eye icons to hide Insula and show the cortex group; then
-select the matching cortex segmentation in **Segment Editor**. Reverse those
-eye icons and select Insula again to return. It creates no output file
+positions slice planes through the Insula mask. It creates no output file
 automatically.
+
+To review a group in the loaded scene:
+
+1. In **Data**, find the three `Henry preset v0.1.4` segmentation nodes. Use
+   their eye icons to show exactly one: **Left insula**, **Left cortex**, or
+   **Left cortex+subcortex**. Hide the other two so overlapping source masks
+   do not obscure which group you are inspecting.
+2. Open **Segment Editor** and set **Segmentation** to the *same* group. Keep
+   **Source volume** set to `NMT_v2.1_sym_SS`. The initial selection is **Left
+   insula**; switching eye icons alone does not change the editor selection.
+3. Inspect the group's names and boundaries in axial, coronal and sagittal
+   slices against the full template. To return to the initial view, show **Left
+   insula**, hide both larger groups, and select **Left insula** in **Segment
+   Editor > Segmentation**.
+
+These are independent copies of the selected source masks. The combined group
+contains the cortical masks also shown in **Left cortex** and the eight masks
+also shown in **Left insula**; edits or visibility changes do not propagate
+between groups. `SL_pyx` (1324) is absent from the supplied ARM6 volume, so
+the combined group contains 342 present parcels rather than 343 declared ones.
 
 ```mermaid
 flowchart LR
   O[Operator starts henry_preset.py in fresh Slicer] --> C[Supplied atlas_config.json]
   C --> I[NMT intensity + ARM6 labels + hierarchy CSV]
   I --> V[Validate grid and exact left cortical L6 IDs]
-  V --> M[Build Insula 8 and cortex 133 masks in memory]
-  M --> S[Two independent CL-only segmentation groups]
+  V --> M[Build Insula 8, cortex 133 and present CL+SL 342 masks in memory]
+  M --> S[Three independent left segmentation groups]
   S --> Q[Operator reviews names, laterality and boundaries]
   S -. Separate manual workflow .-> E[ARMins editor / scientific analysis]
 ```

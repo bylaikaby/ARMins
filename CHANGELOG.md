@@ -2,6 +2,20 @@
 
 One consolidated history. README.md is the operator guide.
 
+## Henry preset viewer 0.1.4 - 2026-10-29 (local/unreleased)
+
+- Add a third independent left cortex+subcortex L6 display group for boundary
+  inspection; preserve the 8-parcel Insula and 133-parcel cortex groups and
+  their initial visibility. Resolve IDs only from the explicit hierarchy and
+  import source voxels without resampling or writing source data.
+- Report declared subcortical IDs absent from the source volume instead of
+  silently dropping them. The supplied ARM6 image lacks SL_pyx (1324): the
+  combined group has 342 present parcels from 343 declared left L6 IDs.
+- Validation: synthetic selection tests and read-only source lattice census
+  passed. Matching SARM6 carries the same present left SL masks and also lacks
+  1324; it was not merged. Native Slicer rendering remains unverified on this host; scientific
+  boundary acceptance remains pending.
+
 ## Henry preset viewer 0.1.3 - 2026-10-26 (local/unreleased)
 
 - Preflight the complete checkout and readability of each configured atlas
